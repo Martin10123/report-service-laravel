@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -11,6 +11,8 @@ defineProps({
     title: String,
 });
 
+const page = usePage();
+
 // Placeholder: cuando exista backend, usar $page.props.auth.is_super_user y $page.props.sedeActual
 const isSuperUser = computed(() => true);
 const sedes = [
@@ -19,6 +21,30 @@ const sedes = [
     { id: 3, name: 'Bocagrande', slug: 'bocagrande' },
 ];
 const sedeActual = ref(sedes[0]);
+
+// Servicio actual - placeholder, cuando haya backend vendrá desde $page.props.servicioActual
+const servicioActual = computed(() => {
+    const servicioId = page.props.servicio_id;
+    
+    // TEMPORAL: Para pruebas, siempre mostrar un servicio
+    // Cuando haya backend, descomentar la siguiente línea:
+    // if (!servicioId) return null;
+    
+    // Datos de ejemplo - cuando haya backend vendrán del servidor
+    return {
+        id: servicioId || 1,
+        sede: 'Villa Grande',
+        numero_servicio: 1,
+        fecha: '2026-02-04',
+        dia_semana: 'MIÉRCOLES',
+        hora: '08:00 AM'
+    };
+});
+
+const formatearFechaCorta = (fecha) => {
+    const d = new Date(fecha);
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+};
 
 const sidebarOpen = ref(false);
 const showingUserDropdown = ref(false);
@@ -40,11 +66,15 @@ const logout = () => {
 const r = (name) => {
     if (name === 'dashboard') return route('dashboard');
     if (name === 'servicios') return route('servicios.index');
-    if (name === 'primer-conteo') return route('servicios.index'); // Por ahora apunta a servicios, luego será su propia ruta
+    if (name === 'primer-conteo') return route('primer-conteo');
+    if (name === 'conteo-a1') return route('conteo-a1');
+    if (name === 'conteo-a2') return route('conteo-a2');
+    if (name === 'conteo-a3') return route('conteo-a3');
+    if (name === 'conteo-a4') return route('conteo-a4');
+    if (name === 'conteo-sobres') return route('conteo-sobres');
+    if (name === 'informe-final') return route('informe-final');
     if (name === 'configuraciones') return route('configuraciones.index');
     if (name === 'profile') return route('profile.show');
-    // Rutas de conteo por área e informe final - por ahora apuntan a servicios
-    if (name.startsWith('conteo-') || name === 'informe-final') return route('servicios.index');
     return route('dashboard');
 };
 </script>
@@ -140,12 +170,36 @@ const r = (name) => {
             </div>
         </header>
 
+        <!-- Banner de servicio actual - Compacto y discreto -->
+        <div v-if="servicioActual" class="sticky top-14 z-20 border-b border-blue-200 bg-blue-50 px-4 py-1.5 sm:px-6">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex min-w-0 flex-1 items-center gap-2">
+                    <svg class="size-3.5 shrink-0 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                        <span class="font-semibold text-blue-900">{{ servicioActual.sede }}</span>
+                        <span class="rounded bg-blue-600 px-1.5 py-0.5 font-bold text-white">N° {{ servicioActual.numero_servicio }}</span>
+                        <span class="hidden text-blue-600 sm:inline">•</span>
+                        <span class="text-blue-700">{{ formatearFechaCorta(servicioActual.fecha) }} • {{ servicioActual.hora }}</span>
+                    </div>
+                </div>
+                <Link
+                    :href="route('servicios.show', servicioActual.id)"
+                    class="shrink-0 text-xs font-medium text-blue-600 transition hover:text-blue-700 hover:underline"
+                >
+                    Ver
+                </Link>
+            </div>
+        </div>
+
         <div class="flex">
             <!-- Sidebar -->
             <aside
                 :class="[
-                    'fixed inset-y-0 left-0 z-40 w-64 border-r border-gray-200 bg-white pt-14 transition-transform duration-200 ease-out',
-                    'lg:sticky lg:top-14 lg:inset-auto lg:h-[calc(100vh-3.5rem)] lg:pt-0 lg:z-0',
+                    'fixed inset-y-0 left-0 z-40 w-64 border-r border-gray-200 bg-white transition-transform duration-200 ease-out',
+                    'lg:sticky lg:inset-auto lg:h-screen lg:z-0',
+                    servicioActual ? 'pt-[6rem] lg:pt-0 lg:top-[6rem]' : 'pt-14 lg:pt-0 lg:top-14',
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
                 ]"
             >
@@ -157,7 +211,7 @@ const r = (name) => {
                             </svg>
                             Servicios
                         </SidebarLink>
-                        <SidebarLink :href="r('primer-conteo')" :active="false" @click="closeSidebar">
+                        <SidebarLink :href="r('primer-conteo')" :active="route().current('primer-conteo')" @click="closeSidebar">
                             <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>

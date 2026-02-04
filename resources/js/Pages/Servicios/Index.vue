@@ -41,6 +41,9 @@ const servicios = ref([
 
 const sedeFiltro = ref(null);
 const mostrarFormulario = ref(false);
+const mostrarModalEliminar = ref(false);
+const servicioEditar = ref(null);
+const servicioEliminar = ref(null);
 
 const form = useForm({
     sede_id: '',
@@ -56,14 +59,61 @@ const serviciosFiltrados = computed(() => {
 });
 
 const crearServicio = () => {
-    form.post(route('servicios.store'), {
+    const url = servicioEditar.value 
+        ? route('servicios.update', servicioEditar.value.id)
+        : route('servicios.store');
+    
+    const method = servicioEditar.value ? 'put' : 'post';
+    
+    form[method](url, {
         preserveScroll: true,
         onSuccess: () => {
             mostrarFormulario.value = false;
             form.reset();
+            servicioEditar.value = null;
             // Cuando haya backend, recargar servicios
         },
     });
+};
+
+const abrirEditar = (servicio) => {
+    servicioEditar.value = servicio;
+    form.sede_id = sedes.find(s => s.name === servicio.sede)?.id || '';
+    form.fecha = servicio.fecha;
+    form.numero_servicio = servicio.numero_servicio;
+    form.hora = servicio.hora;
+    form.dia_semana = servicio.dia_semana;
+    mostrarFormulario.value = true;
+};
+
+const abrirNuevo = () => {
+    servicioEditar.value = null;
+    form.reset();
+    mostrarFormulario.value = true;
+};
+
+const confirmarEliminar = (servicio) => {
+    servicioEliminar.value = servicio;
+    mostrarModalEliminar.value = true;
+};
+
+const eliminarServicio = () => {
+    if (!servicioEliminar.value) return;
+    
+    // Placeholder: cuando haya backend, eliminar servicio
+    const index = servicios.value.findIndex(s => s.id === servicioEliminar.value.id);
+    if (index !== -1) {
+        servicios.value.splice(index, 1);
+    }
+    
+    mostrarModalEliminar.value = false;
+    servicioEliminar.value = null;
+};
+
+const cerrarModal = () => {
+    mostrarFormulario.value = false;
+    servicioEditar.value = null;
+    form.reset();
 };
 
 const formatearFecha = (fecha) => {
@@ -88,7 +138,7 @@ const obtenerNombreSede = (sedeSlug) => {
                         Gestiona los servicios de las sedes.
                     </p>
                 </div>
-                <PrimaryButton @click="mostrarFormulario = true">
+                <PrimaryButton @click="abrirNuevo">
                     <svg class="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -114,14 +164,16 @@ const obtenerNombreSede = (sedeSlug) => {
 
             <!-- Listado de servicios -->
             <div v-if="serviciosFiltrados.length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <Link
+                <div
                     v-for="servicio in serviciosFiltrados"
                     :key="servicio.id"
-                    :href="route('servicios.show', servicio.id)"
                     class="group rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-primary-300 hover:shadow"
                 >
                     <div class="flex items-start justify-between">
-                        <div class="min-w-0 flex-1">
+                        <Link
+                            :href="route('servicios.show', servicio.id)"
+                            class="min-w-0 flex-1"
+                        >
                             <div class="flex items-center gap-2">
                                 <h3 class="font-semibold text-gray-900">
                                     {{ servicio.sede }}
@@ -136,12 +188,29 @@ const obtenerNombreSede = (sedeSlug) => {
                             <p class="mt-0.5 text-xs text-gray-500">
                                 {{ servicio.dia_semana }} {{ servicio.hora }}
                             </p>
+                        </Link>
+                        <div class="flex shrink-0 gap-1">
+                            <button
+                                @click="abrirEditar(servicio)"
+                                class="rounded p-1 text-gray-400 transition hover:bg-blue-50 hover:text-blue-600"
+                                title="Editar servicio"
+                            >
+                                <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <button
+                                @click.stop="confirmarEliminar(servicio)"
+                                class="rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                                title="Eliminar servicio"
+                            >
+                                <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
                         </div>
-                        <svg class="size-5 shrink-0 text-gray-400 transition group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
                     </div>
-                </Link>
+                </div>
             </div>
 
             <!-- Estado vacío -->
@@ -156,21 +225,21 @@ const obtenerNombreSede = (sedeSlug) => {
                     Comienza creando tu primer servicio.
                 </p>
                 <div class="mt-6">
-                    <PrimaryButton @click="mostrarFormulario = true">
+                    <PrimaryButton @click="abrirNuevo">
                         Nuevo servicio
                     </PrimaryButton>
                 </div>
             </div>
         </div>
 
-        <!-- Modal crear servicio -->
-        <Modal :show="mostrarFormulario" @close="mostrarFormulario = false">
+        <!-- Modal crear/editar servicio -->
+        <Modal :show="mostrarFormulario" @close="cerrarModal">
             <div class="p-6">
                 <h2 class="text-lg font-semibold text-gray-900">
-                    Nuevo servicio
+                    {{ servicioEditar ? 'Editar servicio' : 'Nuevo servicio' }}
                 </h2>
                 <p class="mt-1 text-sm text-gray-500">
-                    Completa la información para crear un nuevo servicio.
+                    {{ servicioEditar ? 'Modifica la información del servicio.' : 'Completa la información para crear un nuevo servicio.' }}
                 </p>
 
                 <form @submit.prevent="crearServicio" class="mt-6 space-y-4">
@@ -249,14 +318,48 @@ const obtenerNombreSede = (sedeSlug) => {
                     </div>
 
                     <div class="flex justify-end gap-3 pt-4">
-                        <SecondaryButton type="button" @click="mostrarFormulario = false">
+                        <SecondaryButton type="button" @click="cerrarModal">
                             Cancelar
                         </SecondaryButton>
                         <PrimaryButton :disabled="form.processing">
-                            Crear servicio
+                            {{ servicioEditar ? 'Actualizar' : 'Crear servicio' }}
                         </PrimaryButton>
                     </div>
                 </form>
+            </div>
+        </Modal>
+
+        <!-- Modal confirmar eliminación -->
+        <Modal :show="mostrarModalEliminar" @close="mostrarModalEliminar = false">
+            <div class="p-6">
+                <div class="flex items-start gap-4">
+                    <div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100">
+                        <svg class="size-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            ¿Eliminar servicio?
+                        </h2>
+                        <p class="mt-2 text-sm text-gray-600">
+                            ¿Estás seguro de que deseas eliminar el servicio 
+                            <span class="font-semibold">{{ servicioEliminar?.sede }} N° {{ servicioEliminar?.numero_servicio }}</span>?
+                            Esta acción no se puede deshacer y se perderán todos los datos asociados.
+                        </p>
+                        <div class="mt-6 flex justify-end gap-3">
+                            <SecondaryButton @click="mostrarModalEliminar = false">
+                                Cancelar
+                            </SecondaryButton>
+                            <button
+                                @click="eliminarServicio"
+                                class="inline-flex items-center justify-center rounded-lg border border-transparent bg-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white shadow-sm transition-all duration-200 ease-in-out hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:scale-95"
+                            >
+                                Eliminar servicio
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </Modal>
     </AppLayout>
