@@ -20,6 +20,14 @@ Route::middleware([
         return Inertia::render('Settings/Index');
     })->name('configuraciones.index');
 
+    Route::get('/roles-permisos', function () {
+        return Inertia::render('RolesPermisos/Index');
+    })->name('roles-permisos.index');
+
+    Route::get('/auditorias', function () {
+        return Inertia::render('Auditorias/Index');
+    })->name('auditorias.index');
+
     Route::get('/servicios', function () {
         return Inertia::render('Servicios/Index');
     })->name('servicios.index');
