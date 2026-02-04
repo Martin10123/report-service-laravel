@@ -15,12 +15,8 @@ const page = usePage();
 
 // Placeholder: cuando exista backend, usar $page.props.auth.is_super_user y $page.props.sedeActual
 const isSuperUser = computed(() => true);
-const sedes = [
-    { id: 1, name: 'Villa Grande', slug: 'villa-grande' },
-    { id: 2, name: 'Turbaco', slug: 'turbaco' },
-    { id: 3, name: 'Bocagrande', slug: 'bocagrande' },
-];
-const sedeActual = ref(sedes[0]);
+const sedes = computed(() => page.props.sedes || []);
+const sedeActual = ref(sedes.value[0] || null);
 
 // Servicio actual - placeholder, cuando haya backend vendrá desde $page.props.servicioActual
 const servicioActual = computed(() => {
@@ -115,7 +111,7 @@ const r = (name) => {
                         @click="showingSedeDropdown = !showingSedeDropdown; showingUserDropdown = false"
                     >
                         <span class="hidden sm:inline">Ver sede:</span>
-                        <span class="text-primary-600">{{ sedeActual.name }}</span>
+                        <span class="text-primary-600">{{ sedeActual?.nombre || 'Seleccionar' }}</span>
                         <svg class="size-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -131,9 +127,9 @@ const r = (name) => {
                             class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                             @click="selectSede(sede)"
                         >
-                            {{ sede.name }}
+                            {{ sede.nombre }}
                             <svg
-                                v-if="sede.id === sedeActual.id"
+                                v-if="sedeActual && sede.id === sedeActual.id"
                                 class="size-4 text-primary-600"
                                 fill="currentColor"
                                 viewBox="0 0 20 20"

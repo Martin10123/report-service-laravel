@@ -28,34 +28,10 @@ Route::middleware([
         return Inertia::render('Auditorias/Index');
     })->name('auditorias.index');
 
-    Route::get('/servicios', function () {
-        return Inertia::render('Servicios/Index');
-    })->name('servicios.index');
-
-    Route::post('/servicios', function () {
-        // Placeholder: cuando haya backend, crear el servicio
-        return redirect()->route('servicios.index');
-    })->name('servicios.store');
-
-    Route::put('/servicios/{id}', function ($id) {
-        // Placeholder: cuando haya backend, actualizar el servicio
-        return redirect()->route('servicios.index');
-    })->name('servicios.update');
-
-    Route::delete('/servicios/{id}', function ($id) {
-        // Placeholder: cuando haya backend, eliminar el servicio
-        return redirect()->route('servicios.index');
-    })->name('servicios.destroy');
-
-    Route::get('/servicios/{id}', function ($id) {
-        // Placeholder: cuando haya backend, mostrar detalles del servicio
-        return Inertia::render('Servicios/Show', ['id' => $id]);
-    })->name('servicios.show');
-
-    Route::get('/servicios/{id}', function ($id) {
-        // Placeholder: cuando haya backend, mostrar detalles del servicio
-        return Inertia::render('Servicios/Show', ['id' => $id]);
-    })->name('servicios.show');
+    // Servicios - Resource Controller
+    Route::resource('servicios', \App\Http\Controllers\ServiceController::class);
+    Route::post('/servicios/{id}/cambiar-estado', [\App\Http\Controllers\ServiceController::class, 'cambiarEstado'])
+        ->name('servicios.cambiar-estado');
 
     Route::get('/primer-conteo', function () {
         $servicioId = request('servicio_id');
