@@ -1,289 +1,241 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
-import NavLink from '@/Components/NavLink.vue';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import SidebarLink from '@/Components/SidebarLink.vue';
 
 defineProps({
     title: String,
 });
 
-const showingNavigationDropdown = ref(false);
+// Placeholder: cuando exista backend, usar $page.props.auth.is_super_user y $page.props.sedeActual
+const isSuperUser = computed(() => true);
+const sedes = [
+    { id: 1, name: 'Villa Grande', slug: 'villa-grande' },
+    { id: 2, name: 'Turbaco', slug: 'turbaco' },
+    { id: 3, name: 'Bocagrande', slug: 'bocagrande' },
+];
+const sedeActual = ref(sedes[0]);
 
-const switchToTeam = (team) => {
-    router.put(route('current-team.update'), {
-        team_id: team.id,
-    }, {
-        preserveState: false,
-    });
+const sidebarOpen = ref(false);
+const showingUserDropdown = ref(false);
+const showingSedeDropdown = ref(false);
+
+const closeSidebar = () => { sidebarOpen.value = false; };
+
+const selectSede = (sede) => {
+    sedeActual.value = sede;
+    showingSedeDropdown.value = false;
+    // Cuando haya backend: router.get(route('sede.switch', sede.slug), {}, { preserveState: true });
 };
 
 const logout = () => {
     router.post(route('logout'));
 };
+
+// Rutas placeholder; cuando existan, usar route('servicios.index'), etc.
+const r = (name) => {
+    if (name === 'dashboard') return route('dashboard');
+    if (name === 'servicios') return route('servicios.index');
+    if (name === 'primer-conteo') return route('servicios.index'); // Por ahora apunta a servicios, luego será su propia ruta
+    if (name === 'configuraciones') return route('configuraciones.index');
+    if (name === 'profile') return route('profile.show');
+    // Rutas de conteo por área e informe final - por ahora apuntan a servicios
+    if (name.startsWith('conteo-') || name === 'informe-final') return route('servicios.index');
+    return route('dashboard');
+};
 </script>
 
 <template>
-    <div>
+    <div class="min-h-screen bg-gray-50">
         <Head :title="title" />
-
         <Banner />
 
-        <div class="min-h-screen bg-gray-100">
-            <nav class="bg-white border-b border-gray-100">
-                <!-- Primary Navigation Menu -->
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between h-16">
-                        <div class="flex">
-                            <!-- Logo -->
-                            <div class="shrink-0 flex items-center">
-                                <Link :href="route('dashboard')">
-                                    <ApplicationMark class="block h-9 w-auto" />
-                                </Link>
-                            </div>
+        <!-- Navbar -->
+        <header class="sticky top-0 z-30 flex h-14 items-center border-b border-gray-200 bg-white px-4 shadow-sm sm:px-6">
+            <button
+                type="button"
+                class="mr-3 rounded-md p-2 text-gray-500 hover:bg-gray-100 lg:hidden"
+                aria-label="Abrir menú"
+                @click="sidebarOpen = true"
+            >
+                <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
 
-                            <!-- Navigation Links -->
-                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                                    Dashboard
-                                </NavLink>
-                            </div>
-                        </div>
+            <Link :href="route('dashboard')" class="flex shrink-0 items-center gap-2">
+                <ApplicationMark class="h-8 w-auto" />
+            </Link>
 
-                        <div class="hidden sm:flex sm:items-center sm:ms-6">
-                            <div class="ms-3 relative">
-                                <!-- Teams Dropdown -->
-                                <Dropdown v-if="$page.props.jetstream.hasTeamFeatures" align="right" width="60">
-                                    <template #trigger>
-                                        <span class="inline-flex rounded-md">
-                                            <button type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none focus:bg-gray-50 active:bg-gray-50 transition ease-in-out duration-150">
-                                                {{ $page.props.auth.user.current_team.name }}
+            <div class="ml-4 hidden lg:block">
+                <span class="text-sm font-medium text-gray-500">Reportes de Servicio</span>
+            </div>
 
-                                                <svg class="ms-2 -me-0.5 size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </template>
+            <div class="ml-auto flex items-center gap-2">
+                <!-- Selector de sede (solo super usuario) -->
+                <div v-if="isSuperUser" class="relative">
+                    <button
+                        type="button"
+                        class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                        @click="showingSedeDropdown = !showingSedeDropdown; showingUserDropdown = false"
+                    >
+                        <span class="hidden sm:inline">Ver sede:</span>
+                        <span class="text-primary-600">{{ sedeActual.name }}</span>
+                        <svg class="size-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div
+                        v-show="showingSedeDropdown"
+                        class="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+                    >
+                        <button
+                            v-for="sede in sedes"
+                            :key="sede.id"
+                            type="button"
+                            class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                            @click="selectSede(sede)"
+                        >
+                            {{ sede.name }}
+                            <svg
+                                v-if="sede.id === sedeActual.id"
+                                class="size-4 text-primary-600"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
 
-                                    <template #content>
-                                        <div class="w-60">
-                                            <!-- Team Management -->
-                                            <div class="block px-4 py-2 text-xs text-gray-400">
-                                                Manage Team
-                                            </div>
-
-                                            <!-- Team Settings -->
-                                            <DropdownLink :href="route('teams.show', $page.props.auth.user.current_team)">
-                                                Team Settings
-                                            </DropdownLink>
-
-                                            <DropdownLink v-if="$page.props.jetstream.canCreateTeams" :href="route('teams.create')">
-                                                Create New Team
-                                            </DropdownLink>
-
-                                            <!-- Team Switcher -->
-                                            <template v-if="$page.props.auth.user.all_teams.length > 1">
-                                                <div class="border-t border-gray-200" />
-
-                                                <div class="block px-4 py-2 text-xs text-gray-400">
-                                                    Switch Teams
-                                                </div>
-
-                                                <template v-for="team in $page.props.auth.user.all_teams" :key="team.id">
-                                                    <form @submit.prevent="switchToTeam(team)">
-                                                        <DropdownLink as="button">
-                                                            <div class="flex items-center">
-                                                                <svg v-if="team.id == $page.props.auth.user.current_team_id" class="me-2 size-5 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                </svg>
-
-                                                                <div>{{ team.name }}</div>
-                                                            </div>
-                                                        </DropdownLink>
-                                                    </form>
-                                                </template>
-                                            </template>
-                                        </div>
-                                    </template>
-                                </Dropdown>
-                            </div>
-
-                            <!-- Settings Dropdown -->
-                            <div class="ms-3 relative">
-                                <Dropdown align="right" width="48">
-                                    <template #trigger>
-                                        <button v-if="$page.props.jetstream.managesProfilePhotos" class="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition">
-                                            <img class="size-8 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name">
-                                        </button>
-
-                                        <span v-else class="inline-flex rounded-md">
-                                            <button type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none focus:bg-gray-50 active:bg-gray-50 transition ease-in-out duration-150">
-                                                {{ $page.props.auth.user.name }}
-
-                                                <svg class="ms-2 -me-0.5 size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </template>
-
-                                    <template #content>
-                                        <!-- Account Management -->
-                                        <div class="block px-4 py-2 text-xs text-gray-400">
-                                            Manage Account
-                                        </div>
-
-                                        <DropdownLink :href="route('profile.show')">
-                                            Profile
-                                        </DropdownLink>
-
-                                        <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">
-                                            API Tokens
-                                        </DropdownLink>
-
-                                        <div class="border-t border-gray-200" />
-
-                                        <!-- Authentication -->
-                                        <form @submit.prevent="logout">
-                                            <DropdownLink as="button">
-                                                Log Out
-                                            </DropdownLink>
-                                        </form>
-                                    </template>
-                                </Dropdown>
-                            </div>
-                        </div>
-
-                        <!-- Hamburger -->
-                        <div class="-me-2 flex items-center sm:hidden">
-                            <button class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out" @click="showingNavigationDropdown = ! showingNavigationDropdown">
-                                <svg
-                                    class="size-6"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        :class="{'hidden': showingNavigationDropdown, 'inline-flex': ! showingNavigationDropdown }"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        :class="{'hidden': ! showingNavigationDropdown, 'inline-flex': showingNavigationDropdown }"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
+                <!-- Usuario -->
+                <div class="relative">
+                    <Dropdown align="right" width="48">
+                        <template #trigger>
+                            <button
+                                type="button"
+                                class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                            >
+                                <span class="hidden max-w-[120px] truncate sm:inline">{{ $page.props.auth?.user?.name ?? 'Usuario' }}</span>
+                                <svg class="size-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
                             </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Responsive Navigation Menu -->
-                <div :class="{'block': showingNavigationDropdown, 'hidden': ! showingNavigationDropdown}" class="sm:hidden">
-                    <div class="pt-2 pb-3 space-y-1">
-                        <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                            Dashboard
-                        </ResponsiveNavLink>
-                    </div>
-
-                    <!-- Responsive Settings Options -->
-                    <div class="pt-4 pb-1 border-t border-gray-200">
-                        <div class="flex items-center px-4">
-                            <div v-if="$page.props.jetstream.managesProfilePhotos" class="shrink-0 me-3">
-                                <img class="size-10 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name">
-                            </div>
-
-                            <div>
-                                <div class="font-medium text-base text-gray-800">
-                                    {{ $page.props.auth.user.name }}
-                                </div>
-                                <div class="font-medium text-sm text-gray-500">
-                                    {{ $page.props.auth.user.email }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-3 space-y-1">
-                            <ResponsiveNavLink :href="route('profile.show')" :active="route().current('profile.show')">
-                                Profile
-                            </ResponsiveNavLink>
-
-                            <ResponsiveNavLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')" :active="route().current('api-tokens.index')">
-                                API Tokens
-                            </ResponsiveNavLink>
-
-                            <!-- Authentication -->
-                            <form method="POST" @submit.prevent="logout">
-                                <ResponsiveNavLink as="button">
-                                    Log Out
-                                </ResponsiveNavLink>
+                        </template>
+                        <template #content>
+                            <div class="block px-4 py-2 text-xs text-gray-400">Cuenta</div>
+                            <DropdownLink :href="route('profile.show')">Perfil</DropdownLink>
+                            <div class="border-t border-gray-200" />
+                            <form @submit.prevent="logout">
+                                <DropdownLink as="button">Cerrar sesión</DropdownLink>
                             </form>
-
-                            <!-- Team Management -->
-                            <template v-if="$page.props.jetstream.hasTeamFeatures">
-                                <div class="border-t border-gray-200" />
-
-                                <div class="block px-4 py-2 text-xs text-gray-400">
-                                    Manage Team
-                                </div>
-
-                                <!-- Team Settings -->
-                                <ResponsiveNavLink :href="route('teams.show', $page.props.auth.user.current_team)" :active="route().current('teams.show')">
-                                    Team Settings
-                                </ResponsiveNavLink>
-
-                                <ResponsiveNavLink v-if="$page.props.jetstream.canCreateTeams" :href="route('teams.create')" :active="route().current('teams.create')">
-                                    Create New Team
-                                </ResponsiveNavLink>
-
-                                <!-- Team Switcher -->
-                                <template v-if="$page.props.auth.user.all_teams.length > 1">
-                                    <div class="border-t border-gray-200" />
-
-                                    <div class="block px-4 py-2 text-xs text-gray-400">
-                                        Switch Teams
-                                    </div>
-
-                                    <template v-for="team in $page.props.auth.user.all_teams" :key="team.id">
-                                        <form @submit.prevent="switchToTeam(team)">
-                                            <ResponsiveNavLink as="button">
-                                                <div class="flex items-center">
-                                                    <svg v-if="team.id == $page.props.auth.user.current_team_id" class="me-2 size-5 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <div>{{ team.name }}</div>
-                                                </div>
-                                            </ResponsiveNavLink>
-                                        </form>
-                                    </template>
-                                </template>
-                            </template>
-                        </div>
-                    </div>
+                        </template>
+                    </Dropdown>
                 </div>
-            </nav>
+            </div>
+        </header>
 
-            <!-- Page Heading -->
-            <header v-if="$slots.header" class="bg-white shadow">
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div class="flex">
+            <!-- Sidebar -->
+            <aside
+                :class="[
+                    'fixed inset-y-0 left-0 z-40 w-64 border-r border-gray-200 bg-white pt-14 transition-transform duration-200 ease-out',
+                    'lg:sticky lg:top-14 lg:inset-auto lg:h-[calc(100vh-3.5rem)] lg:pt-0 lg:z-0',
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+                ]"
+            >
+                <div class="flex h-full flex-col lg:min-h-0">
+                    <nav class="flex-1 space-y-0.5 overflow-y-auto px-3 py-4" aria-label="Menú principal">
+                        <SidebarLink :href="r('servicios')" :active="route().current('servicios.index') || route().current('servicios.show')" @click="closeSidebar">
+                            <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            Servicios
+                        </SidebarLink>
+                        <SidebarLink :href="r('primer-conteo')" :active="false" @click="closeSidebar">
+                            <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                            Primer Conteo
+                        </SidebarLink>
+                        <div class="my-2 border-t border-gray-100" />
+                        <SidebarLink :href="r('conteo-a1')" :active="route().current('conteo-a1')" @click="closeSidebar">
+                            <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A1</span>
+                            Conteo A1
+                        </SidebarLink>
+                        <SidebarLink :href="r('conteo-a2')" :active="route().current('conteo-a2')" @click="closeSidebar">
+                            <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A2</span>
+                            Conteo A2
+                        </SidebarLink>
+                        <SidebarLink :href="r('conteo-a3')" :active="route().current('conteo-a3')" @click="closeSidebar">
+                            <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A3</span>
+                            Conteo A3
+                        </SidebarLink>
+                        <SidebarLink :href="r('conteo-a4')" :active="route().current('conteo-a4')" @click="closeSidebar">
+                            <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A4</span>
+                            Conteo A4
+                        </SidebarLink>
+                        <div class="my-2 border-t border-gray-100" />
+                        <SidebarLink :href="r('conteo-sobres')" :active="route().current('conteo-sobres')" @click="closeSidebar">
+                            <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8 4-8-4m16 0l-8 4 8 4m0-8l-8 4-8-4" />
+                            </svg>
+                            Conteo Sobres
+                        </SidebarLink>
+                        <SidebarLink :href="r('informe-final')" :active="route().current('informe-final')" @click="closeSidebar">
+                            <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.5a2 2 0 012 2v5.5a2 2 0 01-2 2H9z" />
+                            </svg>
+                            Informe Final
+                        </SidebarLink>
+                        <div class="my-2 border-t border-gray-100" />
+                        <SidebarLink :href="r('configuraciones')" :active="route().current('configuraciones.index')" @click="closeSidebar">
+                            <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Configuraciones
+                        </SidebarLink>
+                        <SidebarLink :href="r('profile')" :active="route().current('profile.show')" @click="closeSidebar">
+                            <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Perfil
+                        </SidebarLink>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Overlay móvil -->
+            <div
+                v-show="sidebarOpen"
+                class="fixed inset-0 z-20 bg-black/20 lg:hidden"
+                aria-hidden="true"
+                @click="closeSidebar"
+            />
+
+            <!-- Contenido principal -->
+            <main class="min-w-0 flex-1">
+                <div v-if="$slots.header" class="border-b border-gray-200 bg-white px-4 py-4 shadow-sm sm:px-6">
                     <slot name="header" />
                 </div>
-            </header>
-
-            <!-- Page Content -->
-            <main>
-                <slot />
+                <div class="p-4 sm:p-6">
+                    <slot />
+                </div>
             </main>
         </div>
+
+        <!-- Cerrar dropdown de sede al hacer clic fuera -->
+        <div
+            v-show="showingSedeDropdown"
+            class="fixed inset-0 z-10"
+            aria-hidden="true"
+            @click="showingSedeDropdown = false"
+        />
     </div>
 </template>

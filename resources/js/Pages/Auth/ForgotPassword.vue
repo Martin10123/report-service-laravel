@@ -1,11 +1,14 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3';
-import AuthenticationCard from '@/Components/AuthenticationCard.vue';
-import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
+import InputText from 'primevue/inputtext';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import InlineMessage from 'primevue/inlinemessage';
+import AuthLayout from '@/Components/Layout/AuthLayout.vue';
+import AuthCard from '@/Components/Layout/AuthCard.vue';
+import loginImg from '@/images/login-img.svg';
 
 defineProps({
     status: String,
@@ -21,41 +24,79 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Forgot Password" />
+    <Head title="Recuperar contraseña" />
 
-    <AuthenticationCard>
-        <template #logo>
-            <AuthenticationCardLogo />
-        </template>
+    <AuthLayout
+        :image-src="loginImg"
+        image-alt="Recuperar contraseña"
+        :image-on-left="false"
+    >
+        <AuthCard>
+            <div class="space-y-6">
+                <div class="space-y-2 text-center lg:text-left">
+                    <h1 class="text-3xl font-bold tracking-tight text-gray-900">
+                        Recuperar contraseña
+                    </h1>
+                    <p class="text-base text-gray-600">
+                        Indica tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+                    </p>
+                </div>
 
-        <div class="mb-4 text-sm text-gray-600">
-            Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.
-        </div>
+                <Message v-if="status" severity="success" :closable="false">
+                    {{ status }}
+                </Message>
 
-        <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
-            {{ status }}
-        </div>
+                <form class="space-y-5" @submit.prevent="submit">
+                    <div class="space-y-2">
+                        <label
+                            for="email"
+                            class="text-sm font-medium text-gray-700"
+                        >
+                            Correo electrónico
+                        </label>
+                        <IconField>
+                            <InputIcon>
+                                <i class="pi pi-envelope" />
+                            </InputIcon>
+                            <InputText
+                                id="email"
+                                v-model="form.email"
+                                type="email"
+                                placeholder="tu@ejemplo.com"
+                                class="w-full"
+                                fluid
+                                :disabled="form.processing"
+                                :invalid="!!form.errors.email"
+                                autocomplete="username"
+                            />
+                        </IconField>
+                        <InlineMessage
+                            v-if="form.errors.email"
+                            severity="error"
+                        >
+                            {{ form.errors.email }}
+                        </InlineMessage>
+                    </div>
 
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
-                <TextInput
-                    id="email"
-                    v-model="form.email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
-                <InputError class="mt-2" :message="form.errors.email" />
+                    <Button
+                        type="submit"
+                        :label="form.processing ? 'Enviando enlace...' : 'Enviar enlace de recuperación'"
+                        :loading="form.processing"
+                        class="w-full"
+                        size="large"
+                        :disabled="form.processing"
+                    />
+                </form>
+
+                <p class="text-center text-sm text-gray-600">
+                    <Link
+                        :href="route('login')"
+                        class="cursor-pointer font-semibold text-primary-600 underline-offset-2 transition-colors hover:underline hover:text-primary-700"
+                    >
+                        Volver a iniciar sesión
+                    </Link>
+                </p>
             </div>
-
-            <div class="flex items-center justify-end mt-4">
-                <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Email Password Reset Link
-                </PrimaryButton>
-            </div>
-        </form>
-    </AuthenticationCard>
+        </AuthCard>
+    </AuthLayout>
 </template>

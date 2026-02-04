@@ -1,12 +1,15 @@
 <script setup>
-import { ref } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
+import InputText from 'primevue/inputtext';
+import Password from 'primevue/password';
+import Checkbox from 'primevue/checkbox';
+import Button from 'primevue/button';
+import InlineMessage from 'primevue/inlinemessage';
 import AuthLayout from '@/Components/Layout/AuthLayout.vue';
 import AuthCard from '@/Components/Layout/AuthCard.vue';
 import registerImg from '@/images/register-img.svg';
-
-const showPassword = ref(false);
-const showPasswordConfirmation = ref(false);
 
 const form = useForm({
     name: '',
@@ -50,23 +53,28 @@ const submit = () => {
                         >
                             Nombre
                         </label>
-                        <div class="relative group">
-                            <i
-                                class="pi pi-user absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-blue-500"
-                            />
-                            <input
+                        <IconField>
+                            <InputIcon>
+                                <i class="pi pi-user" />
+                            </InputIcon>
+                            <InputText
                                 id="name"
                                 v-model="form.name"
                                 type="text"
                                 placeholder="Tu nombre"
-                                class="h-11 w-full rounded-xl border border-gray-300 bg-white pl-10 pr-4 text-gray-900 placeholder:text-gray-400 transition-all hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-70"
-                                autocomplete="name"
+                                class="w-full"
+                                fluid
                                 :disabled="form.processing"
+                                :invalid="!!form.errors.name"
+                                autocomplete="name"
                             />
-                        </div>
-                        <p v-if="form.errors.name" class="text-sm text-red-600">
+                        </IconField>
+                        <InlineMessage
+                            v-if="form.errors.name"
+                            severity="error"
+                        >
                             {{ form.errors.name }}
-                        </p>
+                        </InlineMessage>
                     </div>
 
                     <div class="space-y-2">
@@ -76,23 +84,28 @@ const submit = () => {
                         >
                             Correo electrónico
                         </label>
-                        <div class="relative group">
-                            <i
-                                class="pi pi-envelope absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-blue-500"
-                            />
-                            <input
+                        <IconField>
+                            <InputIcon>
+                                <i class="pi pi-envelope" />
+                            </InputIcon>
+                            <InputText
                                 id="email"
                                 v-model="form.email"
                                 type="email"
                                 placeholder="tu@ejemplo.com"
-                                class="h-11 w-full rounded-xl border border-gray-300 bg-white pl-10 pr-4 text-gray-900 placeholder:text-gray-400 transition-all hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-70"
-                                autocomplete="username"
+                                class="w-full"
+                                fluid
                                 :disabled="form.processing"
+                                :invalid="!!form.errors.email"
+                                autocomplete="username"
                             />
-                        </div>
-                        <p v-if="form.errors.email" class="text-sm text-red-600">
+                        </IconField>
+                        <InlineMessage
+                            v-if="form.errors.email"
+                            severity="error"
+                        >
                             {{ form.errors.email }}
-                        </p>
+                        </InlineMessage>
                     </div>
 
                     <div class="space-y-2">
@@ -102,43 +115,24 @@ const submit = () => {
                         >
                             Contraseña
                         </label>
-                        <div class="relative group">
-                            <i
-                                class="pi pi-lock absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-blue-500"
-                            />
-                            <input
-                                id="password"
-                                v-model="form.password"
-                                :type="showPassword ? 'text' : 'password'"
-                                placeholder="••••••••"
-                                class="h-11 w-full rounded-xl border border-gray-300 bg-white pl-10 pr-10 text-gray-900 placeholder:text-gray-400 transition-all hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-70"
-                                autocomplete="new-password"
-                                :disabled="form.processing"
-                            />
-                            <button
-                                type="button"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 transition-colors hover:text-gray-600"
-                                :aria-label="
-                                    showPassword
-                                        ? 'Ocultar contraseña'
-                                        : 'Mostrar contraseña'
-                                "
-                                @click="showPassword = !showPassword"
-                            >
-                                <i
-                                    :class="[
-                                        'pi h-5 w-5',
-                                        showPassword ? 'pi-eye-slash' : 'pi-eye',
-                                    ]"
-                                />
-                            </button>
-                        </div>
-                        <p
+                        <Password
+                            id="password"
+                            v-model="form.password"
+                            placeholder="••••••••"
+                            :feedback="false"
+                            toggle-mask
+                            fluid
+                            :disabled="form.processing"
+                            :invalid="!!form.errors.password"
+                            input-class="w-full"
+                            autocomplete="new-password"
+                        />
+                        <InlineMessage
                             v-if="form.errors.password"
-                            class="text-sm text-red-600"
+                            severity="error"
                         >
                             {{ form.errors.password }}
-                        </p>
+                        </InlineMessage>
                     </div>
 
                     <div class="space-y-2">
@@ -148,105 +142,78 @@ const submit = () => {
                         >
                             Confirmar contraseña
                         </label>
-                        <div class="relative group">
-                            <i
-                                class="pi pi-lock absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-blue-500"
-                            />
-                            <input
-                                id="password_confirmation"
-                                v-model="form.password_confirmation"
-                                :type="showPasswordConfirmation ? 'text' : 'password'"
-                                placeholder="••••••••"
-                                class="h-11 w-full rounded-xl border border-gray-300 bg-white pl-10 pr-10 text-gray-900 placeholder:text-gray-400 transition-all hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-70"
-                                autocomplete="new-password"
-                                :disabled="form.processing"
-                            />
-                            <button
-                                type="button"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 transition-colors hover:text-gray-600"
-                                :aria-label="
-                                    showPasswordConfirmation
-                                        ? 'Ocultar contraseña'
-                                        : 'Mostrar contraseña'
-                                "
-                                @click="
-                                    showPasswordConfirmation =
-                                        !showPasswordConfirmation
-                                "
-                            >
-                                <i
-                                    :class="[
-                                        'pi h-5 w-5',
-                                        showPasswordConfirmation
-                                            ? 'pi-eye-slash'
-                                            : 'pi-eye',
-                                    ]"
-                                />
-                            </button>
-                        </div>
-                        <p
+                        <Password
+                            id="password_confirmation"
+                            v-model="form.password_confirmation"
+                            placeholder="••••••••"
+                            :feedback="false"
+                            toggle-mask
+                            fluid
+                            :disabled="form.processing"
+                            :invalid="!!form.errors.password_confirmation"
+                            input-class="w-full"
+                            autocomplete="new-password"
+                        />
+                        <InlineMessage
                             v-if="form.errors.password_confirmation"
-                            class="text-sm text-red-600"
+                            severity="error"
                         >
                             {{ form.errors.password_confirmation }}
-                        </p>
+                        </InlineMessage>
                     </div>
 
                     <div
                         v-if="$page.props.jetstream?.hasTermsAndPrivacyPolicyFeature"
-                        class="block"
+                        class="flex items-start gap-3"
                     >
-                        <label class="flex cursor-pointer items-start gap-3">
-                            <input
-                                v-model="form.terms"
-                                type="checkbox"
-                                name="terms"
-                                required
-                                class="mt-1 rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
-                            />
-                            <span class="text-sm text-gray-600">
-                                Acepto los
-                                <a
-                                    :href="route('terms.show')"
-                                    target="_blank"
-                                    class="font-medium text-blue-600 underline-offset-2 hover:underline"
-                                >
-                                    Términos de Servicio
-                                </a>
-                                y la
-                                <a
-                                    :href="route('policy.show')"
-                                    target="_blank"
-                                    class="font-medium text-blue-600 underline-offset-2 hover:underline"
-                                >
-                                    Política de Privacidad
-                                </a>
-                            </span>
-                        </label>
-                        <p v-if="form.errors.terms" class="mt-2 text-sm text-red-600">
-                            {{ form.errors.terms }}
-                        </p>
-                    </div>
-
-                    <button
-                        type="submit"
-                        class="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
-                        :disabled="form.processing"
-                    >
-                        <i
-                            v-if="form.processing"
-                            class="pi pi-spin pi-spinner h-5 w-5"
+                        <Checkbox
+                            v-model="form.terms"
+                            input-id="terms"
+                            :binary="true"
+                            :disabled="form.processing"
+                            :invalid="!!form.errors.terms"
                         />
-                        <span v-if="form.processing">Creando cuenta...</span>
-                        <span v-else>Registrarse</span>
-                    </button>
+                        <label for="terms" class="cursor-pointer text-sm text-gray-600">
+                            Acepto los
+                            <a
+                                :href="route('terms.show')"
+                                target="_blank"
+                                class="font-medium text-primary-600 underline-offset-2 hover:underline"
+                            >
+                                Términos de Servicio
+                            </a>
+                            y la
+                            <a
+                                :href="route('policy.show')"
+                                target="_blank"
+                                class="font-medium text-primary-600 underline-offset-2 hover:underline"
+                            >
+                                Política de Privacidad
+                            </a>
+                        </label>
+                    </div>
+                    <InlineMessage
+                        v-if="form.errors.terms"
+                        severity="error"
+                    >
+                        {{ form.errors.terms }}
+                    </InlineMessage>
+
+                    <Button
+                        type="submit"
+                        :label="form.processing ? 'Creando cuenta...' : 'Registrarse'"
+                        :loading="form.processing"
+                        class="w-full"
+                        size="large"
+                        :disabled="form.processing"
+                    />
                 </form>
 
                 <p class="text-center text-sm text-gray-600">
                     ¿Ya tienes cuenta?
                     <Link
                         :href="route('login')"
-                        class="cursor-pointer font-semibold text-blue-600 underline-offset-2 transition-colors hover:underline hover:text-blue-700"
+                        class="cursor-pointer font-semibold text-primary-600 underline-offset-2 transition-colors hover:underline hover:text-primary-700"
                     >
                         Inicia sesión
                     </Link>
