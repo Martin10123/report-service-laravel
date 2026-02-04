@@ -117,6 +117,14 @@ class ServiceRepository
             $data['numero_servicio'] = $this->generateNumeroServicio($data['sede_id'], $data['fecha']);
         }
 
+        // Compatibilidad: llenar campo 'sede' legacy si existe sede_id
+        if (isset($data['sede_id']) && !isset($data['sede'])) {
+            $sede = \App\Models\Sede::find($data['sede_id']);
+            if ($sede) {
+                $data['sede'] = $sede->nombre;
+            }
+        }
+
         $servicio = Service::create($data);
         
         // Recargar para obtener la relación

@@ -61,6 +61,8 @@ class ServiceController extends Controller
      */
     public function store(Request $request)
     {
+        \Log::info('Store Request Data:', $request->all());
+        
         $validated = $request->validate([
             'sede_id' => 'required|exists:sedes,id',
             'numero_servicio' => 'nullable|integer|min:1',
@@ -68,11 +70,15 @@ class ServiceController extends Controller
             'hora' => 'required|date_format:H:i',
             'observaciones' => 'nullable|string|max:1000',
         ]);
+        
+        \Log::info('Validated Data:', $validated);
 
         try {
             DB::beginTransaction();
 
             $servicio = $this->serviceRepository->create($validated);
+            
+            \Log::info('Servicio Created:', $servicio->toArray());
 
             DB::commit();
 
@@ -89,6 +95,11 @@ class ServiceController extends Controller
                 ->with('success', 'Servicio creado exitosamente.');
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            \Log::error('Error creating service:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             if ($request->wantsJson()) {
                 return response()->json([
