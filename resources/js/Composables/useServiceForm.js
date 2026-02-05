@@ -45,7 +45,13 @@ export function useServiceForm() {
 
     const abrirNuevo = () => {
         servicioEditar.value = null;
+        // Guardar sede_id antes del reset
+        const sedeIdGuardada = form.sede_id;
         form.reset();
+        // Restaurar sede_id después del reset
+        if (sedeIdGuardada) {
+            form.sede_id = sedeIdGuardada;
+        }
         mostrarFormulario.value = true;
     };
 

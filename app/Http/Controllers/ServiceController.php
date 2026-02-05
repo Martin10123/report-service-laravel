@@ -25,6 +25,14 @@ class ServiceController extends Controller
      */
     public function index(Request $request): Response
     {
+        // Si hay una sede seleccionada en sesión, filtrar por ella
+        $sedeActualId = session('sede_actual_id');
+        
+        // Si se solicita limpiar el servicio, hacerlo
+        if ($request->has('clear_servicio')) {
+            session()->forget('servicio_actual_id');
+        }
+        
         $filters = [
             'sede' => $request->input('sede'),
             'estado' => $request->input('estado'),
@@ -32,6 +40,11 @@ class ServiceController extends Controller
             'fecha_inicio' => $request->input('fecha_inicio'),
             'fecha_fin' => $request->input('fecha_fin'),
         ];
+
+        // Si hay sede seleccionada y no hay filtro manual, aplicar filtro automático
+        if ($sedeActualId && !$filters['sede']) {
+            $filters['sede'] = $sedeActualId;
+        }
 
         $servicios = $this->serviceRepository->getAllPaginated(15, $filters);
         $estadisticas = $this->serviceRepository->getEstadisticas($filters);
@@ -52,8 +65,14 @@ class ServiceController extends Controller
     {
         $sedes = Sede::activas()->orderBy('nombre')->get();
         
+        // Si hay una sede seleccionada, pre-seleccionarla y bloquearla
+        $sedeActualId = session('sede_actual_id');
+        $sedePreseleccionada = $sedeActualId ? Sede::find($sedeActualId) : null;
+        
         return Inertia::render('Servicios/Create', [
             'sedes' => $sedes,
+            'sedePreseleccionada' => $sedePreseleccionada,
+            'sedeBloqueada' => $sedeActualId ? true : false,
         ]);
     }
 
@@ -138,19 +157,44 @@ class ServiceController extends Controller
         // Persistir servicio seleccionado en sesión
         session(['servicio_actual_id' => $servicio->id]);
 
-        // TODO: Obtener los conteos relacionados cuando se implemente
+        // Cargar conteos relacionados
+        $primerConteo = $servicio->primerConteo;
+
+        // Obtener las áreas disponibles para la sede
+        $sede = $servicio->sede;
+        
+        if ($sede) {
+            $areasDisponibles = $sede->getAreas();
+            $tieneParqueadero = $sede->tiene_parqueadero;
+        } else {
+            // Fallback si no hay sede
+            $areasDisponibles = ['A1', 'A2', 'A3', 'A4'];
+            $tieneParqueadero = false;
+        }
+
         $conteos = [
-            'primer_conteo' => null,
-            'area_a1' => null,
-            'area_a2' => null,
-            'area_a3' => null,
-            'area_a4' => null,
-            'conteo_sobres' => null,
+            'primer_conteo' => $primerConteo ? [
+                'completado' => $primerConteo->completado,
+                'actualizado_en' => $primerConteo->updated_at,
+            ] : ['completado' => false, 'actualizado_en' => null],
         ];
+
+        // Agregar solo las áreas disponibles para esta sede
+        foreach ($areasDisponibles as $area) {
+            $conteos['area_' . strtolower($area)] = [
+                'completado' => false, 
+                'actualizado_en' => null
+            ];
+        }
+
+        // Siempre incluir sobres
+        $conteos['sobres'] = ['completado' => false, 'actualizado_en' => null];
 
         return Inertia::render('Servicios/Show', [
             'servicio' => $servicio,
             'conteos' => $conteos,
+            'areasDisponibles' => $areasDisponibles,
+            'tieneParqueadero' => $tieneParqueadero,
         ]);
     }
 
@@ -166,10 +210,15 @@ class ServiceController extends Controller
         }
 
         $sedes = Sede::activas()->orderBy('nombre')->get();
+        
+        // Si hay una sede seleccionada en sesión, bloquear la sede
+        $sedeActualId = session('sede_actual_id');
+        $sedeBloqueada = $sedeActualId ? true : false;
 
         return Inertia::render('Servicios/Edit', [
             'servicio' => $servicio,
             'sedes' => $sedes,
+            'sedeBloqueada' => $sedeBloqueada,
         ]);
     }
 

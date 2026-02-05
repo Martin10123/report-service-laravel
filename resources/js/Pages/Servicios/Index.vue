@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -29,7 +30,11 @@ const props = defineProps({
     },
 });
 
-const isSuperUser = computed(() => true);
+const page = usePage();
+const isSuperUser = computed(() => false);
+
+// Obtener la sede seleccionada desde las props globales
+const sedeActual = computed(() => page.props.sedeActual || null);
 
 // Usar composables
 const {
@@ -38,7 +43,6 @@ const {
     busqueda,
     serviciosFiltrados,
     aplicarFiltros,
-    limpiarFiltros,
 } = useServiceFilters(props);
 
 const {
@@ -55,6 +59,14 @@ const {
     cerrarModal,
     obtenerNombreSede,
 } = useServiceForm();
+
+// Pre-seleccionar la sede actual cuando se abre el formulario
+const abrirNuevoConSede = () => {
+    if (sedeActual.value) {
+        form.sede_id = sedeActual.value.id;
+    }
+    abrirNuevo();
+};
 
 const soloNumeros = (event) => {
     const charCode = event.which || event.keyCode;
@@ -77,7 +89,7 @@ const soloNumeros = (event) => {
                         Gestiona los servicios de las sedes.
                     </p>
                 </div>
-                <PrimaryButton @click="abrirNuevo">
+                <PrimaryButton @click="abrirNuevoConSede">
                     <svg class="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -150,7 +162,7 @@ const soloNumeros = (event) => {
                     Comienza creando tu primer servicio.
                 </p>
                 <div class="mt-6">
-                    <PrimaryButton @click="abrirNuevo">
+                    <PrimaryButton @click="abrirNuevoConSede">
                         Nuevo servicio
                     </PrimaryButton>
                 </div>
@@ -170,7 +182,20 @@ const soloNumeros = (event) => {
                 <form @submit.prevent="crearServicio" class="mt-6 space-y-4">
                     <div>
                         <InputLabel for="sede" value="Sede" />
+                        <div v-if="sedeActual" class="mt-1">
+                            <div class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2">
+                                <svg class="size-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <span class="font-medium text-gray-700">{{ sedeActual.nombre }}</span>
+                                <span class="ml-auto text-xs text-gray-500">(Sede bloqueada)</span>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">
+                                La sede está bloqueada porque tienes un filtro activo.
+                            </p>
+                        </div>
                         <select
+                            v-else
                             id="sede"
                             v-model="form.sede_id"
                             class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"

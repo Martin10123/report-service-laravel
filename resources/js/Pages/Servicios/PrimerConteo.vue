@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
+import { useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Card from '@/Components/Card.vue';
 import CardHeader from '@/Components/CardHeader.vue';
@@ -10,37 +10,40 @@ import CardContent from '@/Components/CardContent.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import { router } from '@inertiajs/vue3';
 
-// Props (cuando venga del backend)
+const page = usePage();
+
+// Props del backend
 const props = defineProps({
     servicio: {
         type: Object,
-        default: () => ({
-            id: 1,
-            sede: 'Villa Grande',
-            fecha: '2026-02-04',
-            numero_servicio: 1,
-            areas: ['A1', 'A2', 'A3', 'A4'],
-        }),
+        required: true,
+    },
+    primerConteo: {
+        type: Object,
+        default: null,
+    },
+    areas: {
+        type: Array,
+        required: true,
+    },
+    error: {
+        type: String,
+        default: null,
     },
 });
 
-// Estado local de las áreas
-const areas = ref(
-    props.servicio.areas.map((area) => ({
-        area,
-        adultos: 0,
-        ninos: 0,
-    }))
-);
+// Estado local de las áreas - inicializar con datos del backend si existen
+const areas = ref(props.areas || []);
 
 // Computed totales
 const totalAdultos = computed(() =>
-    areas.value.reduce((sum, a) => sum + (a.adultos || 0), 0)
+    areas.value.reduce((sum, a) => sum + (parseInt(a.adultos) || 0), 0)
 );
 
 const totalNinos = computed(() =>
-    areas.value.reduce((sum, a) => sum + (a.ninos || 0), 0)
+    areas.value.reduce((sum, a) => sum + (parseInt(a.ninos) || 0), 0)
 );
 
 const totalAsistencia = computed(() => totalAdultos.value + totalNinos.value);
@@ -57,27 +60,34 @@ const fechaHoraActual = computed(() => {
     });
 });
 
-// Handle cambios en las áreas
-const handleAreaChange = (idx, field, value) => {
-    areas.value[idx][field] = value;
-};
-
 // Form para guardar
 const form = useForm({
-    areas: areas,
+    servicio_id: props.servicio.id,
+    areas: areas.value,
+    completado: props.primerConteo?.completado || false,
 });
+
+// Sincronizar cambios de areas con el form
+watch(areas, (newAreas) => {
+    form.areas = newAreas;
+}, { deep: true });
 
 const guardar = () => {
     form.post(route('primer-conteo.store'), {
         preserveScroll: true,
         onSuccess: () => {
-            // Mostrar mensaje de éxito
+            // Redirigir al detalle del servicio después de guardar
+            router.visit(route('servicios.show', props.servicio.id));
+        },
+        onError: (errors) => {
+            console.error('Error al guardar:', errors);
+            alert('Error al guardar el primer conteo');
         },
     });
 };
 
 const refrescar = () => {
-    window.location.reload();
+    router.reload({ only: ['primerConteo', 'areas'] });
 };
 </script>
 
@@ -130,7 +140,6 @@ const refrescar = () => {
                                     min="0"
                                     placeholder="0"
                                     class="h-8 w-full text-sm"
-                                    @input="handleAreaChange(idx, 'adultos', area.adultos)"
                                 />
                             </div>
                             <div class="space-y-1">
@@ -144,7 +153,6 @@ const refrescar = () => {
                                     min="0"
                                     placeholder="0"
                                     class="h-8 w-full text-sm"
-                                    @input="handleAreaChange(idx, 'ninos', area.ninos)"
                                 />
                             </div>
                         </div>
@@ -221,13 +229,26 @@ const refrescar = () => {
             </div>
 
             <!-- Guardar -->
-            <div class="flex justify-end pt-1">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                        v-model="form.completado"
+                        type="checkbox"
+                        class="size-4 rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
+                    />
+                    <span class="text-sm font-medium text-gray-700">
+                        Marcar como completado
+                    </span>
+                </label>
                 <PrimaryButton
                     class="w-full px-6 sm:w-auto"
                     :disabled="form.processing"
                     @click="guardar"
                 >
-                    Guardar
+                    <svg class="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {{ form.completado ? 'Guardar y completar' : 'Guardar' }}
                 </PrimaryButton>
             </div>
         </div>

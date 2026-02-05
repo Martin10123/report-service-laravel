@@ -4,8 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\Sede;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
-class SedeSeeder extends Seeder
+class SedesSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -21,15 +22,6 @@ class SedeSeeder extends Seeder
                 'tiene_gradas' => true,
                 'numero_areas' => 4,
                 'activa' => true,
-                'opciones_disponibles' => [
-                    'primer-conteo',
-                    'conteo-a1',
-                    'conteo-a2',
-                    'conteo-a3',
-                    'conteo-a4',
-                    'conteo-sobres',
-                    'informe-final',
-                ],
             ],
             [
                 'nombre' => 'Turbaco',
@@ -39,12 +31,6 @@ class SedeSeeder extends Seeder
                 'tiene_gradas' => false,
                 'numero_areas' => 1,
                 'activa' => true,
-                'opciones_disponibles' => [
-                    'primer-conteo',
-                    'conteo-a1',
-                    'conteo-sobres',
-                    'informe-final',
-                ],
             ],
             [
                 'nombre' => 'Bocagrande',
@@ -54,20 +40,16 @@ class SedeSeeder extends Seeder
                 'tiene_gradas' => false,
                 'numero_areas' => 1,
                 'activa' => true,
-                'opciones_disponibles' => [
-                    'primer-conteo',
-                    'conteo-a1',
-                    'conteo-sobres',
-                    'informe-final',
-                ],
             ],
         ];
 
-        foreach ($sedes as $sede) {
+        foreach ($sedes as $sedeData) {
             Sede::updateOrCreate(
-                ['slug' => $sede['slug']],
-                $sede
+                ['slug' => $sedeData['slug']], // Buscar por slug
+                $sedeData // Actualizar o crear con estos datos
             );
         }
+
+        $this->command->info('Sedes creadas exitosamente.');
     }
 }

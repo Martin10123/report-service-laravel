@@ -26,19 +26,26 @@ Route::middleware([
         return Inertia::render('Auditorias/Index');
     })->name('auditorias.index');
 
+    // Sede - Cambio de sede (solo super usuarios)
+    Route::get('/sede/switch/{slug}', [\App\Http\Controllers\SedeController::class, 'switch'])
+        ->name('sede.switch');
+    Route::get('/sede/clear', [\App\Http\Controllers\SedeController::class, 'clear'])
+        ->name('sede.clear');
+
     // Servicios - Resource Controller
     Route::resource('servicios', \App\Http\Controllers\ServiceController::class);
     Route::post('/servicios/{id}/cambiar-estado', [\App\Http\Controllers\ServiceController::class, 'cambiarEstado'])
         ->name('servicios.cambiar-estado');
 
-    Route::get('/primer-conteo', function () {
-        $servicioId = request('servicio_id');
-        return Inertia::render('Servicios/PrimerConteo', ['servicio_id' => $servicioId]);
-    })->name('primer-conteo');
-
-    Route::post('/primer-conteo', function () {
-        return redirect()->back();
-    })->name('primer-conteo.store');
+    // Primer Conteo
+    Route::get('/primer-conteo', [\App\Http\Controllers\PrimerConteoController::class, 'index'])
+        ->name('primer-conteo');
+    Route::post('/primer-conteo', [\App\Http\Controllers\PrimerConteoController::class, 'store'])
+        ->name('primer-conteo.store');
+    Route::get('/primer-conteo/{servicio_id}', [\App\Http\Controllers\PrimerConteoController::class, 'show'])
+        ->name('primer-conteo.show');
+    Route::delete('/primer-conteo/{id}', [\App\Http\Controllers\PrimerConteoController::class, 'destroy'])
+        ->name('primer-conteo.destroy');
 
     Route::get('/conteo-a1', function () {
         $servicioId = request('servicio_id');

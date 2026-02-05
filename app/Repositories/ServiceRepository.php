@@ -23,9 +23,14 @@ class ServiceRepository
 
         // Aplicar filtros
         if (!empty($filters['sede'])) {
-            $query->whereHas('sede', function ($q) use ($filters) {
-                $q->where('nombre', $filters['sede']);
-            });
+            // Si es numérico, filtrar por ID; si no, por nombre (retrocompatibilidad)
+            if (is_numeric($filters['sede'])) {
+                $query->where('sede_id', $filters['sede']);
+            } else {
+                $query->whereHas('sede', function ($q) use ($filters) {
+                    $q->where('nombre', $filters['sede']);
+                });
+            }
         }
 
         if (!empty($filters['estado'])) {
@@ -40,7 +45,7 @@ class ServiceRepository
             $query->where(function ($q) use ($filters) {
                 $q->where('numero_servicio', 'like', "%{$filters['busqueda']}%")
                   ->orWhere('observaciones', 'like', "%{$filters['busqueda']}%")
-                  ->orWhereHas('sede', function ($sq) use ($filters) {
+                  ->orWhereHas('sedeRelation', function ($sq) use ($filters) {
                       $sq->where('nombre', 'like', "%{$filters['busqueda']}%");
                   });
             });
@@ -57,13 +62,18 @@ class ServiceRepository
      */
     public function getAll(array $filters = []): Collection
     {
-        $query = Service::query()->with('sede')->orderBy('fecha', 'desc');
+        $query = Service::query()->with('sedeRelation')->orderBy('fecha', 'desc');
 
         // Aplicar filtros
         if (!empty($filters['sede'])) {
-            $query->whereHas('sede', function ($q) use ($filters) {
-                $q->where('nombre', $filters['sede']);
-            });
+            // Si es numérico, filtrar por ID; si no, por nombre (retrocompatibilidad)
+            if (is_numeric($filters['sede'])) {
+                $query->where('sede_id', $filters['sede']);
+            } else {
+                $query->whereHas('sede', function ($q) use ($filters) {
+                    $q->where('nombre', $filters['sede']);
+                });
+            }
         }
 
         if (!empty($filters['estado'])) {
@@ -116,13 +126,7 @@ class ServiceRepository
             $data['numero_servicio'] = $this->generateNumeroServicio($data['sede_id'], $data['fecha']);
         }
 
-        // Compatibilidad: llenar campo 'sede' legacy si existe sede_id
-        if (isset($data['sede_id']) && !isset($data['sede'])) {
-            $sede = \App\Models\Sede::find($data['sede_id']);
-            if ($sede) {
-                $data['sede'] = $sede->nombre;
-            }
-        }
+
 
         $servicio = Service::create($data);
         
@@ -241,9 +245,14 @@ class ServiceRepository
         $query = Service::query();
 
         if (!empty($filters['sede'])) {
-            $query->whereHas('sede', function ($q) use ($filters) {
-                $q->where('nombre', $filters['sede']);
-            });
+            // Si es numérico, filtrar por ID; si no, por nombre (retrocompatibilidad)
+            if (is_numeric($filters['sede'])) {
+                $query->where('sede_id', $filters['sede']);
+            } else {
+                $query->whereHas('sede', function ($q) use ($filters) {
+                    $q->where('nombre', $filters['sede']);
+                });
+            }
         }
 
         if (!empty($filters['fecha_inicio']) && !empty($filters['fecha_fin'])) {

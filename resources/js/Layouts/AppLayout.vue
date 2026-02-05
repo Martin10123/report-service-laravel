@@ -13,25 +13,39 @@ defineProps({
 
 const page = usePage();
 
-// Placeholder: cuando exista backend, usar $page.props.auth.is_super_user y $page.props.sedeActual
-const isSuperUser = computed(() => true);
+// Obtener datos del backend
+const isSuperUser = computed(() => page.props.auth?.is_super_user ?? true);
 const sedes = computed(() => page.props.sedes || []);
-const sedeActual = ref(sedes.value[0] || null);
+const sedeActual = computed(() => page.props.sedeActual || null);
+const opcionesDisponiblesBackend = computed(() => page.props.opcionesDisponibles || []);
 
 // Servicio actual desde props (servicioActual o servicio)
+// Solo usar servicio si estamos en una página que lo requiere y no se ha solicitado limpiar
 const servicioActual = computed(() => {
-    const servicio = page.props.servicioActual || page.props.servicio;
+    // Si servicioActual existe en las props globales, usarlo (viene de la sesión)
+    const servicio = page.props.servicioActual;
     if (!servicio) return null;
 
     return {
         id: servicio.id,
         sede: servicio.sede?.nombre ?? servicio.sede,
+        sede_id: servicio.sede?.id ?? servicio.sede_id,
         numero_servicio: servicio.numero_servicio,
         fecha: servicio.fecha,
         dia_semana: servicio.dia_semana,
         hora: servicio.hora,
     };
 });
+
+// Verificar si una opción está disponible
+// Ahora usa la configuración que viene del backend
+const opcionDisponible = (nombreRuta) => {
+    // Si no hay opciones del backend, mostrar todo (fallback)
+    if (!opcionesDisponiblesBackend.value || opcionesDisponiblesBackend.value.length === 0) {
+        return true;
+    }
+    return opcionesDisponiblesBackend.value.includes(nombreRuta);
+};
 
 const formatearFechaCorta = (fecha) => {
     if (!fecha) return '';
@@ -63,13 +77,14 @@ const formatearHoraCorta = (hora) => {
 const sidebarOpen = ref(false);
 const showingUserDropdown = ref(false);
 const showingSedeDropdown = ref(false);
+const showingServicioDropdown = ref(false);
 
 const closeSidebar = () => { sidebarOpen.value = false; };
 
 const selectSede = (sede) => {
-    sedeActual.value = sede;
     showingSedeDropdown.value = false;
-    // Cuando haya backend: router.get(route('sede.switch', sede.slug), {}, { preserveState: true });
+    // Cambiar la sede en el backend y recargar las opciones
+    router.get(route('sede.switch', sede.slug), {}, { preserveState: false });
 };
 
 const logout = () => {
@@ -89,6 +104,7 @@ const rutasConServicio = new Set([
 // Rutas placeholder; cuando existan, usar route('servicios.index'), etc.
 const r = (name, params = {}) => {
     if (name === 'servicios') {
+        // Si hay servicio seleccionado, ir al detalle; sino, a la lista
         const servicioId = servicioActual.value?.id;
         return servicioId ? route('servicios.show', servicioId) : route('servicios.index');
     }
@@ -218,12 +234,50 @@ const r = (name, params = {}) => {
                         <span class="text-blue-700">{{ formatearFechaCorta(servicioActual.fecha) }} • {{ formatearHoraCorta(servicioActual.hora) }}</span>
                     </div>
                 </div>
-                <Link
-                    :href="route('servicios.show', servicioActual.id)"
-                    class="shrink-0 text-xs font-medium text-blue-600 transition hover:text-blue-700 hover:underline"
-                >
-                    Ver
-                </Link>
+                <div class="relative flex items-center gap-1">
+                    <Link
+                        :href="route('servicios.show', servicioActual.id)"
+                        class="shrink-0 text-xs font-medium text-blue-600 transition hover:text-blue-700 hover:underline"
+                    >
+                        Ver
+                    </Link>
+                    <span class="text-blue-400">•</span>
+                    <button
+                        type="button"
+                        class="flex shrink-0 items-center gap-1 text-xs font-medium text-blue-600 transition hover:text-blue-700"
+                        @click="showingServicioDropdown = !showingServicioDropdown"
+                    >
+                        Cambiar
+                        <svg class="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div
+                        v-show="showingServicioDropdown"
+                        class="absolute right-0 top-full z-50 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+                    >
+                        <Link
+                            :href="route('servicios.index')"
+                            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                            @click="showingServicioDropdown = false"
+                        >
+                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                            Ver todos los servicios
+                        </Link>
+                        <Link
+                            :href="route('servicios.index', { clear_servicio: 1 })"
+                            class="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                            @click="showingServicioDropdown = false"
+                        >
+                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Deseleccionar servicio
+                        </Link>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -245,31 +299,31 @@ const r = (name, params = {}) => {
                             </svg>
                             Servicios
                         </SidebarLink>
-                        <SidebarLink :href="r('primer-conteo')" :active="route().current('primer-conteo')" @click="closeSidebar">
+                        <SidebarLink v-if="opcionDisponible('primer-conteo')" :href="r('primer-conteo')" :active="route().current('primer-conteo')" @click="closeSidebar">
                             <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
                             Primer Conteo
                         </SidebarLink>
-                        <div class="my-2 border-t border-gray-100" />
-                        <SidebarLink :href="r('conteo-a1')" :active="route().current('conteo-a1')" @click="closeSidebar">
+                        <div v-if="opcionDisponible('conteo-a1') || opcionDisponible('conteo-a2') || opcionDisponible('conteo-a3') || opcionDisponible('conteo-a4')" class="my-2 border-t border-gray-100" />
+                        <SidebarLink v-if="opcionDisponible('conteo-a1')" :href="r('conteo-a1')" :active="route().current('conteo-a1')" @click="closeSidebar">
                             <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A1</span>
                             Conteo A1
                         </SidebarLink>
-                        <SidebarLink :href="r('conteo-a2')" :active="route().current('conteo-a2')" @click="closeSidebar">
+                        <SidebarLink v-if="opcionDisponible('conteo-a2')" :href="r('conteo-a2')" :active="route().current('conteo-a2')" @click="closeSidebar">
                             <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A2</span>
                             Conteo A2
                         </SidebarLink>
-                        <SidebarLink :href="r('conteo-a3')" :active="route().current('conteo-a3')" @click="closeSidebar">
+                        <SidebarLink v-if="opcionDisponible('conteo-a3')" :href="r('conteo-a3')" :active="route().current('conteo-a3')" @click="closeSidebar">
                             <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A3</span>
                             Conteo A3
                         </SidebarLink>
-                        <SidebarLink :href="r('conteo-a4')" :active="route().current('conteo-a4')" @click="closeSidebar">
+                        <SidebarLink v-if="opcionDisponible('conteo-a4')" :href="r('conteo-a4')" :active="route().current('conteo-a4')" @click="closeSidebar">
                             <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A4</span>
                             Conteo A4
                         </SidebarLink>
-                        <div class="my-2 border-t border-gray-100" />
-                        <SidebarLink :href="r('conteo-sobres')" :active="route().current('conteo-sobres')" @click="closeSidebar">
+                        <div v-if="opcionDisponible('conteo-sobres')" class="my-2 border-t border-gray-100" />
+                        <SidebarLink v-if="opcionDisponible('conteo-sobres')" :href="r('conteo-sobres')" :active="route().current('conteo-sobres')" @click="closeSidebar">
                             <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8 4-8-4m16 0l-8 4 8 4m0-8l-8 4-8-4" />
                             </svg>
@@ -324,12 +378,18 @@ const r = (name, params = {}) => {
             </main>
         </div>
 
-        <!-- Cerrar dropdown de sede al hacer clic fuera -->
+        <!-- Cerrar dropdowns al hacer clic fuera -->
         <div
             v-show="showingSedeDropdown"
             class="fixed inset-0 z-10"
             aria-hidden="true"
             @click="showingSedeDropdown = false"
+        />
+        <div
+            v-show="showingServicioDropdown"
+            class="fixed inset-0 z-10"
+            aria-hidden="true"
+            @click="showingServicioDropdown = false"
         />
     </div>
 </template>

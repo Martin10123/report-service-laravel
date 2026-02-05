@@ -36,9 +36,28 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Obtener la sede seleccionada (desde sesión o desde servicio actual)
+        $sedeActualId = session('sede_actual_id');
+        $sedeActual = null;
+
+        if ($sedeActualId) {
+            $sedeActual = Sede::find($sedeActualId);
+        }
+
+        // Si hay un servicio seleccionado en sesión, usar su sede
+        $servicioActualId = session('servicio_actual_id');
+        if ($servicioActualId) {
+            $servicio = \App\Models\Service::with('sede')->find($servicioActualId);
+            if ($servicio && $servicio->sede) {
+                $sedeActual = $servicio->sede;
+            }
+        }
+
         return [
             ...parent::share($request),
             'sedes' => fn () => Sede::activas()->orderBy('nombre')->get(),
+            'sedeActual' => fn () => $sedeActual,
+            'opcionesDisponibles' => fn () => $sedeActual ? $sedeActual->getOpcionesDisponibles() : [],
         ];
     }
 }

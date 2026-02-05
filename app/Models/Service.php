@@ -24,7 +24,6 @@ class Service extends Model
      */
     protected $fillable = [
         'sede_id',
-        'sede',
         'numero_servicio',
         'fecha',
         'dia_semana',
@@ -79,7 +78,15 @@ class Service extends Model
      */
     public function sede()
     {
-        return $this->belongsTo(Sede::class);
+        return $this->belongsTo(Sede::class, 'sede_id');
+    }
+
+    /**
+     * Get the primer conteo for the service.
+     */
+    public function primerConteo()
+    {
+        return $this->hasOne(PrimerConteo::class, 'servicio_id');
     }
 
     /**
