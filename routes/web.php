@@ -47,23 +47,25 @@ Route::middleware([
     Route::delete('/primer-conteo/{id}', [\App\Http\Controllers\PrimerConteoController::class, 'destroy'])
         ->name('primer-conteo.destroy');
 
-    Route::get('/conteo-a1', function () {
-        $servicioId = request('servicio_id');
-        return Inertia::render('Areas/A1', ['servicio_id' => $servicioId]);
-    })->name('conteo-a1');
+    // Conteo A1
+    Route::get('/conteo-a1', [\App\Http\Controllers\ConteoA1Controller::class, 'index'])
+        ->name('conteo-a1');
+    Route::post('/conteo-a1', [\App\Http\Controllers\ConteoA1Controller::class, 'store'])
+        ->name('conteo-a1.store');
+    Route::get('/conteo-a1/{servicio_id}', [\App\Http\Controllers\ConteoA1Controller::class, 'show'])
+        ->name('conteo-a1.show');
+    Route::delete('/conteo-a1/{id}', [\App\Http\Controllers\ConteoA1Controller::class, 'destroy'])
+        ->name('conteo-a1.destroy');
 
-    Route::post('/conteo-a1', function () {
-        return redirect()->back();
-    })->name('areas.a1.store');
-
-    Route::get('/conteo-a2', function () {
-        $servicioId = request('servicio_id');
-        return Inertia::render('Areas/A2', ['servicio_id' => $servicioId]);
-    })->name('conteo-a2');
-
-    Route::post('/conteo-a2', function () {
-        return redirect()->back();
-    })->name('areas.a2.store');
+    // Conteo A2
+    Route::get('/conteo-a2', [\App\Http\Controllers\ConteoA2Controller::class, 'index'])
+        ->name('conteo-a2');
+    Route::post('/conteo-a2', [\App\Http\Controllers\ConteoA2Controller::class, 'store'])
+        ->name('conteo-a2.store');
+    Route::get('/conteo-a2/{servicio_id}', [\App\Http\Controllers\ConteoA2Controller::class, 'show'])
+        ->name('conteo-a2.show');
+    Route::delete('/conteo-a2/{id}', [\App\Http\Controllers\ConteoA2Controller::class, 'destroy'])
+        ->name('conteo-a2.destroy');
 
     Route::get('/conteo-a3', function () {
         $servicioId = request('servicio_id');

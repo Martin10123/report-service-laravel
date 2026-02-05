@@ -55,6 +55,7 @@ const update = (key, value) => {
                     <NumberInput
                         label="Total personas"
                         :model-value="data.totalPersonas"
+                        :max="data.totalSillas"
                         @update:model-value="update('totalPersonas', $event)"
                     />
                     <NumberInput

@@ -159,6 +159,8 @@ class ServiceController extends Controller
 
         // Cargar conteos relacionados
         $primerConteo = $servicio->primerConteo;
+        $conteoA1 = $servicio->conteoA1;
+        $conteoA2 = $servicio->conteoA2;
 
         // Obtener las áreas disponibles para la sede
         $sede = $servicio->sede;
@@ -181,10 +183,25 @@ class ServiceController extends Controller
 
         // Agregar solo las áreas disponibles para esta sede
         foreach ($areasDisponibles as $area) {
-            $conteos['area_' . strtolower($area)] = [
-                'completado' => false, 
-                'actualizado_en' => null
-            ];
+            $key = 'area_' . strtolower($area);
+            
+            // Cargar el estado real del conteo según el área
+            if ($area === 'A1' && $conteoA1) {
+                $conteos[$key] = [
+                    'completado' => $conteoA1->completado,
+                    'actualizado_en' => $conteoA1->updated_at,
+                ];
+            } elseif ($area === 'A2' && $conteoA2) {
+                $conteos[$key] = [
+                    'completado' => $conteoA2->completado,
+                    'actualizado_en' => $conteoA2->updated_at,
+                ];
+            } else {
+                $conteos[$key] = [
+                    'completado' => false, 
+                    'actualizado_en' => null
+                ];
+            }
         }
 
         // Siempre incluir sobres

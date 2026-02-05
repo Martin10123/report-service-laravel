@@ -36,10 +36,20 @@ const handleDecrement = () => {
 };
 
 const handleInput = (e) => {
-    const value = parseInt(e.target.value, 10) || 0;
-    if (value >= props.min && value <= props.max) {
-        emit('update:modelValue', value);
+    let value = parseInt(e.target.value, 10);
+    
+    // Si no es un número válido, usar el mínimo
+    if (isNaN(value)) {
+        value = props.min;
     }
+    
+    // Asegurar que el valor esté dentro de los límites
+    value = Math.max(props.min, Math.min(props.max, value));
+    
+    // Actualizar el input para reflejar el valor correcto
+    e.target.value = value;
+    
+    emit('update:modelValue', value);
 };
 </script>
 
