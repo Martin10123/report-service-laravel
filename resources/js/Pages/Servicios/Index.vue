@@ -1,18 +1,18 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Link, useForm, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import Modal from '@/Components/Modal.vue';
+import ServiceCard from '@/Components/ServiceCard.vue';
+import { useServiceFilters } from '@/Composables/useServiceFilters';
+import { useServiceForm } from '@/Composables/useServiceForm';
 
-// Props desde el backend
 const props = defineProps({
     servicios: {
-        type: Object, // Paginación de Laravel
+        type: Object,
         required: true,
     },
     estadisticas: {
@@ -31,130 +31,37 @@ const props = defineProps({
 
 const isSuperUser = computed(() => true);
 
-const sedeFiltro = ref(props.filters.sede || null);
-const estadoFiltro = ref(props.filters.estado || null);
-const busqueda = ref(props.filters.busqueda || '');
-const mostrarFormulario = ref(false);
-const mostrarModalEliminar = ref(false);
-const servicioEditar = ref(null);
-const servicioEliminar = ref(null);
+// Usar composables
+const {
+    sedeFiltro,
+    estadoFiltro,
+    busqueda,
+    serviciosFiltrados,
+    aplicarFiltros,
+    limpiarFiltros,
+} = useServiceFilters(props);
 
-const form = useForm({
-    sede_id: null,
-    fecha: null,
-    numero_servicio: null,
-    hora: null,
-    observaciones: '',
-});
+const {
+    form,
+    mostrarFormulario,
+    mostrarModalEliminar,
+    servicioEditar,
+    servicioEliminar,
+    crearServicio,
+    abrirEditar,
+    abrirNuevo,
+    confirmarEliminar,
+    eliminarServicio,
+    cerrarModal,
+    obtenerNombreSede,
+} = useServiceForm();
 
-const aplicarFiltros = () => {
-    router.get(route('servicios.index'), {
-        sede: sedeFiltro.value,
-        estado: estadoFiltro.value,
-        busqueda: busqueda.value,
-    }, {
-        preserveState: true,
-        preserveScroll: true,
-    });
-};
-
-const limpiarFiltros = () => {
-    sedeFiltro.value = null;
-    estadoFiltro.value = null;
-    busqueda.value = '';
-    router.get(route('servicios.index'), {}, {
-        preserveState: true,
-        preserveScroll: true,
-    });
-};
-
-const crearServicio = () => {
-    const url = servicioEditar.value 
-        ? route('servicios.update', servicioEditar.value.id)
-        : route('servicios.store');
-    
-    const method = servicioEditar.value ? 'put' : 'post';
-    
-    form[method](url, {
-        preserveScroll: true,
-        onSuccess: () => {
-            mostrarFormulario.value = false;
-            form.reset();
-            servicioEditar.value = null;
-            // Cuando haya backend, recargar servicios
-        },
-    });
-};
-
-const abrirEditar = (servicio) => {
-    servicioEditar.value = servicio;
-    form.sede_id = servicio.sede_id;
-    form.fecha = servicio.fecha || '';
-    form.numero_servicio = servicio.numero_servicio;
-    form.hora = servicio.hora || '';
-    form.observaciones = servicio.observaciones || '';
-    mostrarFormulario.value = true;
-};
-
-const abrirNuevo = () => {
-    servicioEditar.value = null;
-    form.reset();
-    mostrarFormulario.value = true;
-};
-
-const confirmarEliminar = (servicio) => {
-    servicioEliminar.value = servicio;
-    mostrarModalEliminar.value = true;
-};
-
-const eliminarServicio = () => {
-    if (!servicioEliminar.value) return;
-    
-    // Placeholder: cuando haya backend, eliminar servicio
-    const index = servicios.value.findIndex(s => s.id === servicioEliminar.value.id);
-    if (index !== -1) {
-        servicios.value.splice(index, 1);
+const soloNumeros = (event) => {
+    const charCode = event.which || event.keyCode;
+    // Permitir solo números (0-9)
+    if (charCode < 48 || charCode > 57) {
+        event.preventDefault();
     }
-    
-    mostrarModalEliminar.value = false;
-    servicioEliminar.value = null;
-};
-
-const cerrarModal = () => {
-    mostrarFormulario.value = false;
-    servicioEditar.value = null;
-    form.reset();
-};
-
-const formatearFecha = (fecha) => {
-    const d = new Date(fecha);
-    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-};
-
-const formatearHora = (hora) => {
-    if (!hora) return '';
-    
-    // Si es una fecha ISO completa (2026-02-04T19:00:00.000000Z)
-    if (hora.includes('T')) {
-        const d = new Date(hora);
-        return d.toLocaleTimeString('es-ES', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: false 
-        });
-    }
-    
-    // Si ya es formato HH:MM, retornar tal cual
-    return hora;
-};
-
-const obtenerNombreSede = (sede) => {
-    // Si sede es un objeto con la relación cargada
-    if (typeof sede === 'object' && sede !== null) {
-        return sede.nombre;
-    }
-    // Si es string (legacy)
-    return sede;
 };
 </script>
 
@@ -205,71 +112,29 @@ const obtenerNombreSede = (sede) => {
                         <option :value="null">Todos los estados</option>
                         <option value="activo">Activo</option>
                         <option value="finalizado">Finalizado</option>
-                        <option value="cancelado">Cancelado</option>
                     </select>
                 </div>
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
                     <input
                         v-model="busqueda"
-                        @input="aplicarFiltros"
                         type="text"
-                        placeholder="Sede, número..."
+                        placeholder="Sede, número, fecha..."
                         class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                     />
                 </div>
             </div>
 
             <!-- Listado de servicios -->
-            <div v-if="servicios.data && servicios.data.length > 0" class="space-y-4">
+            <div v-if="serviciosFiltrados.length > 0" class="space-y-4">
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div
-                        v-for="servicio in servicios.data"
+                    <ServiceCard
+                        v-for="servicio in serviciosFiltrados"
                         :key="servicio.id"
-                        class="group rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-primary-300 hover:shadow"
-                    >
-                        <div class="flex items-start justify-between">
-                            <Link
-                                :href="route('servicios.show', servicio.id)"
-                                class="min-w-0 flex-1"
-                            >
-                                <div class="flex items-center gap-2">
-                                    <h3 class="font-semibold text-gray-900">
-                                        {{ obtenerNombreSede(servicio.sede) }}
-                                    </h3>
-                                    <span class="rounded bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">
-                                        N° {{ servicio.numero_servicio }}
-                                    </span>
-                                </div>
-                                <p class="mt-1 text-sm text-gray-600">
-                                    {{ formatearFecha(servicio.fecha) }}
-                                </p>
-                                <p class="mt-0.5 text-xs text-gray-500">
-                                    {{ servicio.dia_semana }} {{ formatearHora(servicio.hora) }}
-                                </p>
-                            </Link>
-                            <div class="flex shrink-0 gap-1">
-                                <button
-                                    @click="abrirEditar(servicio)"
-                                    class="rounded p-1 text-gray-400 transition hover:bg-blue-50 hover:text-blue-600"
-                                    title="Editar servicio"
-                                >
-                                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                </button>
-                                <button
-                                    @click.stop="confirmarEliminar(servicio)"
-                                    class="rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
-                                    title="Eliminar servicio"
-                                >
-                                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                        :servicio="servicio"
+                        @edit="abrirEditar"
+                        @delete="confirmarEliminar"
+                    />
                 </div>
             </div>
 
@@ -332,6 +197,22 @@ const obtenerNombreSede = (sede) => {
                     </div>
 
                     <div>
+                        <InputLabel for="numero_servicio" value="Número de servicio" />
+                        <input
+                            id="numero_servicio"
+                            v-model.number="form.numero_servicio"
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="1"
+                            class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                            @keypress="soloNumeros"
+                        />
+                        <InputError :message="form.errors.numero_servicio" class="mt-1" />
+                        <p class="mt-1 text-xs text-gray-500">Déjalo vacío para generar automáticamente</p>
+                    </div>
+
+                    <div>
                         <InputLabel for="hora" value="Hora" />
                         <input
                             id="hora"
@@ -381,7 +262,7 @@ const obtenerNombreSede = (sede) => {
                         </h2>
                         <p class="mt-2 text-sm text-gray-600">
                             ¿Estás seguro de que deseas eliminar el servicio 
-                            <span class="font-semibold">{{ obtenerNombreSede(servicioEliminar?.sede) }} N° {{ servicioEliminar?.numero_servicio }}</span>?
+                            <span class="font-semibold">{{ obtenerNombreSede(servicioEliminar?.sede) }}</span>?
                             Esta acción no se puede deshacer y se perderán todos los datos asociados.
                         </p>
                         <div class="mt-6 flex justify-end gap-3">

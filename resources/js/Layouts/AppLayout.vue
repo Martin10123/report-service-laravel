@@ -18,28 +18,46 @@ const isSuperUser = computed(() => true);
 const sedes = computed(() => page.props.sedes || []);
 const sedeActual = ref(sedes.value[0] || null);
 
-// Servicio actual - placeholder, cuando haya backend vendrá desde $page.props.servicioActual
+// Servicio actual desde props (servicioActual o servicio)
 const servicioActual = computed(() => {
-    const servicioId = page.props.servicio_id;
-    
-    // TEMPORAL: Para pruebas, siempre mostrar un servicio
-    // Cuando haya backend, descomentar la siguiente línea:
-    // if (!servicioId) return null;
-    
-    // Datos de ejemplo - cuando haya backend vendrán del servidor
+    const servicio = page.props.servicioActual || page.props.servicio;
+    if (!servicio) return null;
+
     return {
-        id: servicioId || 1,
-        sede: 'Villa Grande',
-        numero_servicio: 1,
-        fecha: '2026-02-04',
-        dia_semana: 'MIÉRCOLES',
-        hora: '08:00 AM'
+        id: servicio.id,
+        sede: servicio.sede?.nombre ?? servicio.sede,
+        numero_servicio: servicio.numero_servicio,
+        fecha: servicio.fecha,
+        dia_semana: servicio.dia_semana,
+        hora: servicio.hora,
     };
 });
 
 const formatearFechaCorta = (fecha) => {
-    const d = new Date(fecha);
+    if (!fecha) return '';
+
+    let fechaLimpia = fecha;
+    if (typeof fecha === 'string' && fecha.includes('T')) {
+        fechaLimpia = fecha.split('T')[0];
+    }
+
+    const [year, month, day] = fechaLimpia.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
     return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+};
+
+const formatearHoraCorta = (hora) => {
+    if (!hora) return '';
+    if (hora.includes('T')) {
+        const d = new Date(hora);
+        return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+    if (hora.includes(' ')) {
+        const partes = hora.split(' ');
+        const soloHora = partes[1] || partes[0];
+        return soloHora.substring(0, 5);
+    }
+    return hora.substring(0, 5);
 };
 
 const sidebarOpen = ref(false);
@@ -58,21 +76,40 @@ const logout = () => {
     router.post(route('logout'));
 };
 
+const rutasConServicio = new Set([
+    'primer-conteo',
+    'conteo-a1',
+    'conteo-a2',
+    'conteo-a3',
+    'conteo-a4',
+    'conteo-sobres',
+    'informe-final',
+]);
+
 // Rutas placeholder; cuando existan, usar route('servicios.index'), etc.
-const r = (name) => {
-    if (name === 'dashboard') return route('dashboard');
-    if (name === 'servicios') return route('servicios.index');
-    if (name === 'primer-conteo') return route('primer-conteo');
-    if (name === 'conteo-a1') return route('conteo-a1');
-    if (name === 'conteo-a2') return route('conteo-a2');
-    if (name === 'conteo-a3') return route('conteo-a3');
-    if (name === 'conteo-a4') return route('conteo-a4');
-    if (name === 'conteo-sobres') return route('conteo-sobres');
-    if (name === 'informe-final') return route('informe-final');
+const r = (name, params = {}) => {
+    if (name === 'servicios') {
+        const servicioId = servicioActual.value?.id;
+        return servicioId ? route('servicios.show', servicioId) : route('servicios.index');
+    }
     if (name === 'configuraciones') return route('configuraciones.index');
     if (name === 'auditorias') return route('auditorias.index');
     if (name === 'profile') return route('profile.show');
-    return route('dashboard');
+
+    const servicioId = servicioActual.value?.id;
+    const finalParams = rutasConServicio.has(name) && servicioId
+        ? { servicio_id: servicioId, ...params }
+        : params;
+
+    if (name === 'primer-conteo') return route('primer-conteo', finalParams);
+    if (name === 'conteo-a1') return route('conteo-a1', finalParams);
+    if (name === 'conteo-a2') return route('conteo-a2', finalParams);
+    if (name === 'conteo-a3') return route('conteo-a3', finalParams);
+    if (name === 'conteo-a4') return route('conteo-a4', finalParams);
+    if (name === 'conteo-sobres') return route('conteo-sobres', finalParams);
+    if (name === 'informe-final') return route('informe-final', finalParams);
+
+    return route('servicios.index');
 };
 </script>
 
@@ -94,7 +131,7 @@ const r = (name) => {
                 </svg>
             </button>
 
-            <Link :href="route('dashboard')" class="flex shrink-0 items-center gap-2">
+            <Link :href="r('servicios')" class="flex shrink-0 items-center gap-2">
                 <ApplicationMark class="h-8 w-auto" />
             </Link>
 
@@ -178,7 +215,7 @@ const r = (name) => {
                         <span class="font-semibold text-blue-900">{{ servicioActual.sede }}</span>
                         <span class="rounded bg-blue-600 px-1.5 py-0.5 font-bold text-white">N° {{ servicioActual.numero_servicio }}</span>
                         <span class="hidden text-blue-600 sm:inline">•</span>
-                        <span class="text-blue-700">{{ formatearFechaCorta(servicioActual.fecha) }} • {{ servicioActual.hora }}</span>
+                        <span class="text-blue-700">{{ formatearFechaCorta(servicioActual.fecha) }} • {{ formatearHoraCorta(servicioActual.hora) }}</span>
                     </div>
                 </div>
                 <Link

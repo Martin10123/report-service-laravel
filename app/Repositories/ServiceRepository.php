@@ -19,8 +19,7 @@ class ServiceRepository
     {
         $query = Service::query()
             ->with('sede')
-            ->orderBy('fecha', 'desc')
-            ->orderBy('hora', 'desc');
+            ->orderBy('created_at', 'asc');
 
         // Aplicar filtros
         if (!empty($filters['sede'])) {
@@ -168,6 +167,9 @@ class ServiceRepository
             return false;
         }
 
+        // Cambiar estado a cancelado antes de eliminar
+        $servicio->update(['estado' => 'cancelado']);
+
         return $servicio->delete();
     }
 
@@ -198,8 +200,8 @@ class ServiceRepository
      */
     private function generateNumeroServicio(int $sedeId, string $fecha): int
     {
+        // Obtener el último número de servicio para esta sede (sin filtrar por año)
         $ultimoServicio = Service::where('sede_id', $sedeId)
-            ->whereYear('fecha', date('Y', strtotime($fecha)))
             ->orderBy('numero_servicio', 'desc')
             ->first();
 

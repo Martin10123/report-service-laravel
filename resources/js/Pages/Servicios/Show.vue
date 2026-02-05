@@ -4,46 +4,65 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { computed } from 'vue';
+import { formatearHora } from '@/Utils/dateHelpers';
 
-// Placeholder: cuando haya backend, recibir desde props
 const props = defineProps({
-    id: [String, Number],
+    servicio: {
+        type: Object,
+        required: true,
+    },
+    conteos: {
+        type: Object,
+        required: true,
+    },
 });
 
-// Datos de ejemplo - cuando haya backend vendrán desde el servidor
-const servicio = {
-    id: props.id,
-    sede: 'Villa Grande',
-    fecha: '2026-02-04',
-    numero_servicio: 1,
-    hora: '08:00',
-    dia_semana: 'MIÉRCOLES',
-    conteos: {
-        primer_conteo: { completado: true, actualizado_en: '2026-02-04 08:15:00' },
-        area_a1: { completado: true, actualizado_en: '2026-02-04 08:30:00' },
-        area_a2: { completado: false, actualizado_en: null },
-        area_a3: { completado: false, actualizado_en: null },
-        area_a4: { completado: false, actualizado_en: null },
-        sobres: { completado: false, actualizado_en: null },
-    }
-};
+const servicio = props.servicio;
+const conteos = props.conteos || {};
+
+const nombreSede = computed(() => servicio.sede?.nombre ?? servicio.sede);
 
 const formatearFecha = (fecha) => {
-    const d = new Date(fecha);
+    if (!fecha) return '';
+    
+    // Extraer solo la parte de la fecha (YYYY-MM-DD)
+    let fechaLimpia = fecha;
+    if (typeof fecha === 'string' && fecha.includes('T')) {
+        fechaLimpia = fecha.split('T')[0];
+    }
+    
+    // Parsear y crear Date con componentes locales para evitar problemas de zona horaria
+    const [year, month, day] = fechaLimpia.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
+    
     return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 const formatearFechaHora = (fecha) => {
     if (!fecha) return null;
+    
+    // Crear Date desde el string ISO completo para preservar hora
     const d = new Date(fecha);
-    return d.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    
+    return d.toLocaleString('es-ES', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 };
 
 const progreso = computed(() => {
-    const total = Object.keys(servicio.conteos).length;
-    const completados = Object.values(servicio.conteos).filter(c => c.completado).length;
+    const total = Object.keys(conteos).length;
+    if (!total) return 0;
+    const completados = Object.values(conteos).filter(c => c?.completado).length;
     return Math.round((completados / total) * 100);
 });
+
+const obtenerConteo = (key) => {
+    return conteos[key] || { completado: false, actualizado_en: null };
+};
 
 const secciones = [
     { 
@@ -98,7 +117,7 @@ const secciones = [
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <Link
-                        :href="route('servicios.index')"
+                        :href="route('servicios.index', { clear_servicio: 1 })"
                         class="mb-2 inline-flex items-center text-sm text-gray-500 transition hover:text-gray-700"
                     >
                         <svg class="mr-1 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,10 +126,10 @@ const secciones = [
                         Volver a servicios
                     </Link>
                     <h1 class="text-xl font-bold text-gray-900 sm:text-2xl">
-                        {{ servicio.sede }} - Servicio N° {{ servicio.numero_servicio }}
+                        {{ nombreSede }} - Servicio N° {{ servicio.numero_servicio }}
                     </h1>
                     <p class="mt-1 text-sm text-gray-600">
-                        {{ formatearFecha(servicio.fecha) }} • {{ servicio.dia_semana }} {{ servicio.hora }}
+                        {{ formatearFecha(servicio.fecha) }} • {{ servicio.dia_semana }} {{ formatearHora(servicio.hora) }}
                     </p>
                 </div>
                 <Link :href="route('informe-final')" class="inline-flex">
@@ -128,7 +147,7 @@ const secciones = [
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-sm font-semibold text-gray-900">Progreso del reporte</h3>
-                        <p class="mt-1 text-xs text-gray-500">{{ Object.values(servicio.conteos).filter(c => c.completado).length }} de {{ Object.keys(servicio.conteos).length }} secciones completadas</p>
+                        <p class="mt-1 text-xs text-gray-500">{{ Object.values(conteos).filter(c => c?.completado).length }} de {{ Object.keys(conteos).length }} secciones completadas</p>
                     </div>
                     <div class="text-right">
                         <p class="text-2xl font-bold text-blue-600">{{ progreso }}%</p>
@@ -150,7 +169,7 @@ const secciones = [
                     <!-- Badge de estado -->
                     <div class="absolute right-3 top-3">
                         <span
-                            v-if="servicio.conteos[seccion.key].completado"
+                            v-if="obtenerConteo(seccion.key).completado"
                             class="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700"
                         >
                             <svg class="mr-1 size-3" fill="currentColor" viewBox="0 0 20 20">
@@ -179,14 +198,14 @@ const secciones = [
                             <p class="mt-1 text-xs text-gray-500">
                                 {{ seccion.descripcion }}
                             </p>
-                            <p v-if="servicio.conteos[seccion.key].actualizado_en" class="mt-2 text-xs text-gray-400">
-                                Actualizado: {{ formatearFechaHora(servicio.conteos[seccion.key].actualizado_en) }}
+                            <p v-if="obtenerConteo(seccion.key).actualizado_en" class="mt-2 text-xs text-gray-400">
+                                Actualizado: {{ formatearFechaHora(obtenerConteo(seccion.key).actualizado_en) }}
                             </p>
                         </div>
                     </div>
 
                     <div class="mt-3 flex items-center text-sm font-medium text-blue-600 group-hover:text-blue-700">
-                        {{ servicio.conteos[seccion.key].completado ? 'Editar' : 'Completar' }}
+                        {{ obtenerConteo(seccion.key).completado ? 'Editar' : 'Completar' }}
                         <svg class="ml-1 size-4 transition group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>

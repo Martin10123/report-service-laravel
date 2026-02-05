@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sede;
+use App\Models\Service;
 use App\Repositories\ServiceRepository;
 use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -61,8 +62,6 @@ class ServiceController extends Controller
      */
     public function store(Request $request)
     {
-        \Log::info('Store Request Data:', $request->all());
-        
         $validated = $request->validate([
             'sede_id' => 'required|exists:sedes,id',
             'numero_servicio' => 'nullable|integer|min:1',
@@ -70,16 +69,26 @@ class ServiceController extends Controller
             'hora' => 'required|date_format:H:i',
             'observaciones' => 'nullable|string|max:1000',
         ]);
-        
-        \Log::info('Validated Data:', $validated);
 
+        // Validar unicidad de numero_servicio por sede (solo si se proporciona)
+        if (!empty($validated['numero_servicio'])) {
+            $existe = Service::where('sede_id', $validated['sede_id'])
+                ->where('numero_servicio', $validated['numero_servicio'])
+                ->exists();
+
+            if ($existe) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->withErrors(['numero_servicio' => 'Este número de servicio ya existe para la sede seleccionada.']);
+            }
+        }
+        
         try {
             DB::beginTransaction();
 
             $servicio = $this->serviceRepository->create($validated);
             
-            \Log::info('Servicio Created:', $servicio->toArray());
-
             DB::commit();
 
             if ($request->wantsJson()) {
@@ -96,7 +105,7 @@ class ServiceController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             
-            \Log::error('Error creating service:', [
+            Log::error('Error creating service:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -125,6 +134,9 @@ class ServiceController extends Controller
         if (!$servicio) {
             abort(404, 'Servicio no encontrado');
         }
+
+        // Persistir servicio seleccionado en sesión
+        session(['servicio_actual_id' => $servicio->id]);
 
         // TODO: Obtener los conteos relacionados cuando se implemente
         $conteos = [
@@ -174,6 +186,19 @@ class ServiceController extends Controller
             'estado' => 'nullable|in:activo,finalizado,cancelado',
             'observaciones' => 'nullable|string|max:1000',
         ]);
+
+        // Validar unicidad de numero_servicio por sede (excluyendo el servicio actual)
+        $existe = Service::where('sede_id', $validated['sede_id'])
+            ->where('numero_servicio', $validated['numero_servicio'])
+            ->where('id', '!=', $id)
+            ->exists();
+
+        if ($existe) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['numero_servicio' => 'Este número de servicio ya existe para la sede seleccionada.']);
+        }
 
         try {
             DB::beginTransaction();

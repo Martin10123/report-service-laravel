@@ -4,7 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return redirect()->route('login');
+    return auth()->check() 
+        ? redirect()->route('servicios.index') 
+        : redirect()->route('login');
 });
 
 Route::middleware([
@@ -12,10 +14,6 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
-
     Route::get('/configuraciones', function () {
         return Inertia::render('Settings/Index');
     })->name('configuraciones.index');
