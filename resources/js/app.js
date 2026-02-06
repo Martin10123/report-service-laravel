@@ -8,6 +8,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
+import ToastService from 'primevue/toastservice';
 import { definePreset, updatePrimaryPalette } from '@primeuix/themes';
 
 // Paleta principal: 2563eb (principal), 3b82f6 (claro), f3f4f6 (superficie)
@@ -43,6 +44,7 @@ createInertiaApp({
                     },
                 },
             })
+            .use(ToastService)
             .mount(el);
     },
     progress: {

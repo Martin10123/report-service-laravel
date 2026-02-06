@@ -26,6 +26,14 @@ Route::middleware([
         return Inertia::render('Auditorias/Index');
     })->name('auditorias.index');
 
+    // Sedes - Configuración
+    Route::get('/sedes', [\App\Http\Controllers\SedeController::class, 'index'])
+        ->name('sedes.index');
+    Route::put('/sedes/{sede}', [\App\Http\Controllers\SedeController::class, 'update'])
+        ->name('sedes.update');
+    Route::post('/sedes/{sede}/toggle-active', [\App\Http\Controllers\SedeController::class, 'toggleActive'])
+        ->name('sedes.toggle-active');
+
     // Sede - Cambio de sede (solo super usuarios)
     Route::get('/sede/switch/{slug}', [\App\Http\Controllers\SedeController::class, 'switch'])
         ->name('sede.switch');

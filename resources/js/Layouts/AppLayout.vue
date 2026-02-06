@@ -6,6 +6,7 @@ import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import SidebarLink from '@/Components/SidebarLink.vue';
+import Toast from 'primevue/toast';
 
 defineProps({
     title: String,
@@ -133,6 +134,7 @@ const r = (name, params = {}) => {
     <div class="min-h-screen bg-gray-50">
         <Head :title="title" />
         <Banner />
+        <Toast />
 
         <!-- Navbar -->
         <header class="sticky top-0 z-30 flex h-14 items-center border-b border-gray-200 bg-white px-4 shadow-sm sm:px-6">

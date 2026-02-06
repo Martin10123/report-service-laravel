@@ -165,8 +165,8 @@ const cambiarTema = (tema) => {
                 </CardHeader>
                 <CardContent>
                     <p class="mb-3 text-sm text-gray-600">Administrar sedes y configuraciones específicas</p>
-                    <button
-                        type="button"
+                    <Link
+                        :href="route('sedes.index')"
                         class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                     >
                         <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,7 +174,7 @@ const cambiarTema = (tema) => {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         Configurar sedes
-                    </button>
+                    </Link>
                 </CardContent>
             </Card>
 

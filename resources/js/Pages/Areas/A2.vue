@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
+import { useToast } from 'primevue/usetoast';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Card from '@/Components/Card.vue';
 import CardHeader from '@/Components/CardHeader.vue';
@@ -11,6 +12,8 @@ import ServidoresGridCard from '@/Components/Areas/ServidoresGridCard.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { useSillasPersonas } from '@/Composables/useSillasPersonas';
+
+const toast = useToast();
 
 const props = defineProps({
     servicio_id: [String, Number],
@@ -76,6 +79,16 @@ const guardar = () => {
         },
         onError: (errors) => {
             console.error('Error al guardar:', errors);
+            // Mostrar los errores al usuario con toast
+            const errorMessages = Object.values(errors);
+            errorMessages.forEach(msg => {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error de validación',
+                    detail: msg,
+                    life: 5000
+                });
+            });
         },
     });
 };

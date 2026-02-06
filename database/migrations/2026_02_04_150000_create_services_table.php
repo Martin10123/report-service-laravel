@@ -6,43 +6,45 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
-            $table->string('sede');
-            $table->integer('numero_servicio');
+
+            // Relación con sedes
+            $table->foreignId('sede_id')
+                ->constrained('sedes')
+                ->cascadeOnDelete();
+
+            // Datos del servicio
+            $table->integer('numero_servicio')->nullable(); // nullable desde el inicio
             $table->date('fecha');
             $table->string('dia_semana');
             $table->time('hora');
-            $table->enum('estado', ['activo', 'finalizado', 'cancelado'])->default('activo');
+
+            $table->enum('estado', ['activo', 'finalizado', 'cancelado'])
+                ->default('activo');
+
             $table->text('observaciones')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
 
-            // Índices para optimización de consultas
-            $table->index('sede'); // Filtro por sede
-            $table->index('fecha'); // Ordenamiento y filtro por fecha
-            $table->index('estado'); // Filtro por estado
-            $table->index('numero_servicio'); // Búsqueda por número
-            
-            // Índices compuestos para consultas frecuentes
-            $table->index(['sede', 'fecha', 'estado']); // Filtro combinado más común
-            $table->index(['fecha', 'hora']); // Ordenamiento principal
-            $table->index(['estado', 'fecha']); // Listar servicios por estado y fecha
-            $table->index(['sede', 'numero_servicio', 'deleted_at']); // Generación de número único
-            
-            // Índice para soft deletes
+            $table->index('sede_id');
+            $table->index('fecha');
+            $table->index('estado');
+            $table->index('numero_servicio');
+
+            // Índices compuestos (consultas frecuentes)
+            $table->index(['sede_id', 'fecha', 'estado']);
+            $table->index(['fecha', 'hora']);
+            $table->index(['estado', 'fecha']);
+            $table->index(['sede_id', 'numero_servicio', 'deleted_at']);
+
             $table->index('deleted_at');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('services');

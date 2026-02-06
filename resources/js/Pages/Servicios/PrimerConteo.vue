@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useForm, usePage } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import { useForm, usePage } from '@inertiajs/vue3';import { useToast } from 'primevue/usetoast';import AppLayout from '@/Layouts/AppLayout.vue';
 import Card from '@/Components/Card.vue';
 import CardHeader from '@/Components/CardHeader.vue';
 import CardTitle from '@/Components/CardTitle.vue';
@@ -11,6 +10,8 @@ import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { router } from '@inertiajs/vue3';
+
+const toast = useToast();
 
 const page = usePage();
 
@@ -81,7 +82,15 @@ const guardar = () => {
         },
         onError: (errors) => {
             console.error('Error al guardar:', errors);
-            alert('Error al guardar el primer conteo');
+            const errorMessages = Object.values(errors);
+            errorMessages.forEach(msg => {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error de validación',
+                    detail: msg,
+                    life: 5000
+                });
+            });
         },
     });
 };
