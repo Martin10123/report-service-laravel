@@ -105,6 +105,7 @@ const rutasConServicio = new Set([
     'conteo-a3',
     'conteo-a4',
     'conteo-sobres',
+    'consolidado',
     'informe-final',
 ]);
 
@@ -130,6 +131,7 @@ const r = (name, params = {}) => {
     if (name === 'conteo-a3') return route('conteo-a3', finalParams);
     if (name === 'conteo-a4') return route('conteo-a4', finalParams);
     if (name === 'conteo-sobres') return route('conteo-sobres', finalParams);
+    if (name === 'consolidado') return route('consolidado', finalParams);
     if (name === 'informe-final') return route('informe-final', finalParams);
 
     return route('servicios.index');
@@ -329,9 +331,15 @@ const r = (name, params = {}) => {
                         <div v-if="opcionDisponible('conteo-sobres')" class="my-2 border-t border-gray-100" />
                         <SidebarLink v-if="opcionDisponible('conteo-sobres')" :href="r('conteo-sobres')" :active="route().current('conteo-sobres')" @click="closeSidebar">
                             <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8 4-8-4m16 0l-8 4 8 4m0-8l-8 4-8-4" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8 4-8 4m16 0l-8 4 8 4m0-8l-8 4-8-4" />
                             </svg>
                             Conteo Sobres
+                        </SidebarLink>
+                        <SidebarLink :href="r('consolidado')" :active="route().current('consolidado')" @click="closeSidebar">
+                            <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            Consolidado
                         </SidebarLink>
                         <SidebarLink :href="r('informe-final')" :active="route().current('informe-final')" @click="closeSidebar">
                             <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

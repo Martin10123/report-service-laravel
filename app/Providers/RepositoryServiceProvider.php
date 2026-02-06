@@ -9,6 +9,7 @@ use App\Repositories\ConteoA1Repository;
 use App\Repositories\ConteoA2Repository;
 use App\Repositories\ConteoA3Repository;
 use App\Repositories\ConteoA4Repository;
+use App\Repositories\ConteoDeSobresRepository;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -39,6 +40,10 @@ class RepositoryServiceProvider extends ServiceProvider
 
         $this->app->singleton(ConteoA4Repository::class, function ($app) {
             return new ConteoA4Repository();
+        });
+
+        $this->app->singleton(ConteoDeSobresRepository::class, function ($app) {
+            return new ConteoDeSobresRepository();
         });
     }
 

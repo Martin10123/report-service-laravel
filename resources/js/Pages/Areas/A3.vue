@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
 import { useToast } from 'primevue/usetoast';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -43,6 +43,32 @@ const updateServidor = (key, value) => {
 const totalServidores = computed(() => {
     return Object.values(servidores.value).reduce((sum, val) => sum + val, 0);
 });
+
+// Calcular automáticamente el total de personas
+const totalPersonasCalculado = computed(() => {
+    const sillasOcupadas = sillasPersonas.data.totalSillas - sillasPersonas.data.sillasVacias;
+    const totalARestar = sillasPersonas.data.totalNinos + servidores.value.servidores;
+    const resultado = Math.max(0, sillasOcupadas - totalARestar);
+    
+    console.log('=== A3 Cálculo Total Personas ===');
+    console.log('Total sillas:', sillasPersonas.data.totalSillas);
+    console.log('Sillas vacías:', sillasPersonas.data.sillasVacias);
+    console.log('Sillas ocupadas:', sillasOcupadas);
+    console.log('Total niños A3:', sillasPersonas.data.totalNinos);
+    console.log('Solo Servidores:', servidores.value.servidores);
+    console.log('Total a restar:', totalARestar);
+    console.log('Resultado final:', resultado);
+    console.log('===================================');
+    
+    return resultado;
+});
+
+// Sincronizar el valor calculado con sillasPersonas.data
+watch([() => sillasPersonas.data.totalSillas, () => sillasPersonas.data.sillasVacias, () => sillasPersonas.data.totalNinos, () => servidores.value.servidores], () => {
+    console.log('Watch ejecutándose en A3');
+    sillasPersonas.data.totalPersonas = totalPersonasCalculado.value;
+    console.log('Nuevo valor de totalPersonas:', sillasPersonas.data.totalPersonas);
+}, { immediate: true });
 
 const fechaHoraActual = computed(() => {
     const fecha = new Date();
@@ -127,7 +153,7 @@ const guardar = () => {
                         </div>
                         <div class="rounded-lg bg-white/60 px-2 py-2">
                             <p class="text-lg font-bold text-blue-600">{{ totalServidores }}</p>
-                            <p class="text-xs text-gray-600">Servidores</p>
+                            <p class="text-xs text-gray-600">Total servidores</p>
                         </div>
                     </div>
                 </CardContent>
@@ -142,6 +168,7 @@ const guardar = () => {
                         <SillasPersonasSection
                             :data="sillasPersonas.data"
                             ninos-label="Niños A3"
+                            :readonly-total-personas="true"
                             @update="sillasPersonas.update"
                         />
                     </div>

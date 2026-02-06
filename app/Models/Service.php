@@ -122,6 +122,14 @@ class Service extends Model
     }
 
     /**
+     * Get the conteo de sobres for the service.
+     */
+    public function conteoSobres()
+    {
+        return $this->hasOne(ConteoDeSobres::class, 'servicio_id');
+    }
+
+    /**
      * Accesor para obtener el nombre formateado.
      */
     public function getNombreCompletoAttribute(): string

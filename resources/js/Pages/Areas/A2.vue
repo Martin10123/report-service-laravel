@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
 import { useToast } from 'primevue/usetoast';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -45,6 +45,20 @@ const updateServidor = (key, value) => {
 const totalServidores = computed(() => {
     return Object.values(servidores.value).reduce((sum, val) => sum + val, 0);
 });
+
+// Calcular automáticamente el total de personas
+const totalPersonasCalculado = computed(() => {
+    const sillasOcupadas = sillasPersonas.data.totalSillas - sillasPersonas.data.sillasVacias;
+    const servidoresTotal = servidores.value.servidores + servidores.value.logistica;
+    const resultado = Math.max(0, sillasOcupadas - servidoresTotal);
+    
+    return resultado;
+});
+
+// Sincronizar el valor calculado con sillasPersonas.data
+watch([() => sillasPersonas.data.totalSillas, () => sillasPersonas.data.sillasVacias, () => servidores.value.servidores, () => servidores.value.logistica], () => {
+    sillasPersonas.data.totalPersonas = totalPersonasCalculado.value;
+}, { immediate: true });
 
 const fechaHoraActual = computed(() => {
     const fecha = new Date();
@@ -147,6 +161,7 @@ const guardar = () => {
                         <SillasPersonasSection
                             :data="sillasPersonas.data"
                             ninos-label="Niños A2"
+                            :readonly-total-personas="true"
                             @update="sillasPersonas.update"
                         />
                     </div>

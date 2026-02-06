@@ -14,6 +14,10 @@ defineProps({
         type: String,
         default: 'Niños',
     },
+    readonlyTotalPersonas: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(['update']);
@@ -56,6 +60,7 @@ const update = (key, value) => {
                         label="Total personas"
                         :model-value="data.totalPersonas"
                         :max="data.totalSillas"
+                        :readonly="readonlyTotalPersonas"
                         @update:model-value="update('totalPersonas', $event)"
                     />
                     <NumberInput

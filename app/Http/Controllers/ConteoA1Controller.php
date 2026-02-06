@@ -86,29 +86,30 @@ class ConteoA1Controller extends Controller
                 'sillas.sillasVacias' => 'required|integer|min:0',
                 'sillas.totalPersonas' => 'required|integer|min:0',
                 'sillas.totalNinos' => 'required|integer|min:0',
-                'servidores' => 'required|array',
-                'servidores.servidores' => 'required|integer|min:0',
-                'servidores.comunicaciones' => 'required|integer|min:0',
-                'servidores.logistica' => 'required|integer|min:0',
-                'servidores.alabanza' => 'required|integer|min:0',
-                'servidorasPastora' => 'required|array',
+                'servidores' => 'nullable|array',
+                'servidores.servidores' => 'nullable|integer|min:0',
+                'servidores.comunicaciones' => 'nullable|integer|min:0',
+                'servidores.logistica' => 'nullable|integer|min:0',
+                'servidores.alabanza' => 'nullable|integer|min:0',
+                'servidorasPastora' => 'nullable|array',
                 'completado' => 'sometimes|boolean',
             ]);
 
             // Crear estructura de áreas para guardar
             $areas = [
                 'sillas' => $validated['sillas'],
-                'servidores' => $validated['servidores'],
-                'servidorasPastora' => array_values(array_filter($validated['servidorasPastora'], fn($n) => !empty(trim($n)))),
+                'servidores' => $validated['servidores'] ?? [],
+                'servidorasPastora' => isset($validated['servidorasPastora']) ? array_values(array_filter($validated['servidorasPastora'], fn($n) => !empty(trim($n)))) : [],
             ];
 
             // Calcular totales
             $totalAdultos = $validated['sillas']['totalPersonas'] - $validated['sillas']['totalNinos'];
             $totalNinos = $validated['sillas']['totalNinos'];
-            $totalServidores = $validated['servidores']['servidores'] 
-                + $validated['servidores']['comunicaciones']
-                + $validated['servidores']['logistica']
-                + $validated['servidores']['alabanza']
+            $servidoresData = $validated['servidores'] ?? [];
+            $totalServidores = ($servidoresData['servidores'] ?? 0)
+                + ($servidoresData['comunicaciones'] ?? 0)
+                + ($servidoresData['logistica'] ?? 0)
+                + ($servidoresData['alabanza'] ?? 0)
                 + count($areas['servidorasPastora']);
 
             // Crear o actualizar conteo A1

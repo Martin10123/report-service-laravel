@@ -163,6 +163,7 @@ class ServiceController extends Controller
         $conteoA2 = $servicio->conteoA2;
         $conteoA3 = $servicio->conteoA3;
         $conteoA4 = $servicio->conteoA4;
+        $conteoSobres = $servicio->conteoSobres;
 
         // Obtener las áreas disponibles para la sede desde la BD
         $sede = $servicio->sede;
@@ -225,7 +226,10 @@ class ServiceController extends Controller
         }
 
         // Siempre incluir sobres
-        $conteos['sobres'] = ['completado' => false, 'actualizado_en' => null];
+        $conteos['sobres'] = $conteoSobres ? [
+            'completado' => $conteoSobres->completado,
+            'actualizado_en' => $conteoSobres->updated_at,
+        ] : ['completado' => false, 'actualizado_en' => null];
 
         return Inertia::render('Servicios/Show', [
             'servicio' => $servicio,

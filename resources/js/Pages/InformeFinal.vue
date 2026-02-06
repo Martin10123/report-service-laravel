@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Card from '@/Components/Card.vue';
 import CardHeader from '@/Components/CardHeader.vue';
@@ -9,57 +9,57 @@ import CardContent from '@/Components/CardContent.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 
-// Props placeholder (cuando venga del backend)
 const props = defineProps({
+    servicio_id: [String, Number],
     servicio: {
         type: Object,
         default: () => ({
-            sede: 'Villa Grande',
-            fecha: '2026-02-04',
-            numero_servicio: 1,
-            dia_semana: 'MIÉRCOLES',
-            hora: '08:00 AM',
+            sede: '',
+            fecha: new Date().toISOString().split('T')[0],
+            numero_servicio: 0,
+            dia_semana: '',
+            hora: '',
         }),
     },
     data: {
         type: Object,
         default: () => ({
             asistencia: {
-                enSillas: 467,
-                enGradas: 56,
-                ninosAuditorio: 18,
-                ninosIglekids: 35,
-                totalAuditorio: 576,
+                enSillas: 0,
+                enGradas: 0,
+                ninosAuditorio: 0,
+                ninosIglekids: 0,
+                totalAuditorio: 0,
                 servidores: {
-                    servidores: 24,
-                    consolidacion: 12,
-                    comunicaciones: 7,
-                    logistica: 9,
-                    jesusPlace: 4,
-                    datafono: 8,
-                    coffee: 2,
-                    ministerial: 2,
-                    alabanza: 8,
-                    vip: 1,
-                    iglekids: 55,
+                    servidores: 0,
+                    consolidacion: 0,
+                    comunicaciones: 0,
+                    logistica: 0,
+                    jesusPlace: 0,
+                    datafono: 0,
+                    coffee: 0,
+                    ministerial: 0,
+                    alabanza: 0,
+                    vip: 0,
+                    iglekids: 0,
                 },
-                totalServidores: 132,
-                totalPersonasIglesia: 708,
+                totalServidores: 0,
+                totalPersonasIglesia: 0,
             },
             vehiculos: {
-                carros: 104,
-                motos: 35,
-                bicicletas: 2,
-                total: 141,
+                carros: 0,
+                motos: 0,
+                bicicletas: 0,
+                total: 0,
             },
             ofrendas: {
-                canastas: 8,
+                canastas: 0,
                 sobresOfrendas: {
-                    inicial: 987,
-                    recibidos: 320,
-                    total: 1307,
-                    entregados: 218,
-                    final: 1089,
+                    inicial: 0,
+                    recibidos: 0,
+                    total: 0,
+                    entregados: 0,
+                    final: 0,
                 },
                 sobresProtemplo: {
                     inicial: 0,
@@ -69,11 +69,11 @@ const props = defineProps({
                     final: 0,
                 },
                 sobresIglekids: {
-                    inicial: 26,
-                    recibidos: 1,
-                    total: 27,
-                    entregados: 1,
-                    final: 26,
+                    inicial: 0,
+                    recibidos: 0,
+                    total: 0,
+                    entregados: 0,
+                    final: 0,
                 },
             },
         }),
@@ -81,6 +81,7 @@ const props = defineProps({
 });
 
 const fechaFormateada = computed(() => {
+    if (!props.servicio?.fecha) return '';
     const fecha = new Date(props.servicio.fecha);
     return fecha.toLocaleDateString('es-ES', {
         day: '2-digit',
@@ -101,6 +102,18 @@ const exportarExcel = () => {
 <template>
     <AppLayout title="Informe Final">
         <div class="space-y-3">
+            <!-- Breadcrumb/Back button -->
+            <Link
+                v-if="servicio_id"
+                :href="route('servicios.show', servicio_id)"
+                class="inline-flex items-center text-sm text-gray-500 transition hover:text-gray-700"
+            >
+                <svg class="mr-1 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver al servicio
+            </Link>
+
             <!-- Header -->
             <Card variant="accent" class="border-l-4 border-l-blue-600">
                 <CardContent class="p-4">

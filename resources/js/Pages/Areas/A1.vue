@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
 import { useToast } from 'primevue/usetoast';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -53,6 +53,35 @@ const totalServidores = computed(() => {
         servidorasPastora.value.filter((n) => n.trim()).length;
     return totalServ;
 });
+
+// Calcular automáticamente el total de personas
+const totalPersonasCalculado = computed(() => {
+    const sillasOcupadas = sillasPersonas.data.totalSillas - sillasPersonas.data.sillasVacias;
+    const servidoresTotal = servidores.value.servidores + servidores.value.logistica + servidorasPastora.value.filter((n) => n.trim()).length;
+    const resultado = Math.max(0, sillasOcupadas - servidoresTotal);
+    
+    console.log('=== A1 Cálculo Total Personas ===');
+    console.log('Total sillas:', sillasPersonas.data.totalSillas);
+    console.log('Sillas vacías:', sillasPersonas.data.sillasVacias);
+    console.log('Sillas ocupadas:', sillasOcupadas);
+    console.log('Servidores:', servidores.value.servidores);
+    console.log('Logística:', servidores.value.logistica);
+    console.log('Servidor de Pastora:', servidorasPastora.value.filter((n) => n.trim()).length);
+    console.log('Servidores total:', servidoresTotal);
+    console.log('Resultado final:', resultado);
+    console.log('===================================');
+    
+    return resultado;
+});
+
+// Sincronizar el valor calculado con sillasPersonas.data
+watch([() => sillasPersonas.data.totalSillas, () => sillasPersonas.data.sillasVacias, () => servidores.value.servidores, () => servidores.value.logistica, servidorasPastora], () => {
+    console.log('Watch ejecutándose en A1');
+    console.log('Valor calculado:', totalPersonasCalculado.value);
+    console.log('Asignando a sillasPersonas.data.totalPersonas');
+    sillasPersonas.data.totalPersonas = totalPersonasCalculado.value;
+    console.log('Nuevo valor de totalPersonas:', sillasPersonas.data.totalPersonas);
+}, { immediate: true, deep: true });
 
 const fechaHoraActual = computed(() => {
     const fecha = new Date();
@@ -168,6 +197,7 @@ const removeServidoraPastora = (index) => {
                         <SillasPersonasSection
                             :data="sillasPersonas.data"
                             ninos-label="Niños A1"
+                            :readonly-total-personas="true"
                             @update="sillasPersonas.update"
                         />
                     </div>

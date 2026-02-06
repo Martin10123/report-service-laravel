@@ -95,18 +95,19 @@ Route::middleware([
     Route::delete('/conteo-a4/{id}', [\App\Http\Controllers\ConteoA4Controller::class, 'destroy'])
         ->name('conteo-a4.destroy');
 
-    Route::get('/conteo-sobres', function () {
-        $servicioId = request('servicio_id');
-        return Inertia::render('ConteoDeSobres', ['servicio_id' => $servicioId]);
-    })->name('conteo-sobres');
+    // Conteo de Sobres
+    Route::get('/conteo-sobres', [\App\Http\Controllers\ConteoDeSobresController::class, 'index'])
+        ->name('conteo-sobres');
+    Route::post('/conteo-sobres', [\App\Http\Controllers\ConteoDeSobresController::class, 'store'])
+        ->name('conteo-sobres.store');
+    Route::get('/conteo-sobres/{servicio_id}', [\App\Http\Controllers\ConteoDeSobresController::class, 'show'])
+        ->name('conteo-sobres.show');
+    Route::delete('/conteo-sobres/{id}', [\App\Http\Controllers\ConteoDeSobresController::class, 'destroy'])
+        ->name('conteo-sobres.destroy');
 
-    Route::post('/conteo-sobres', function () {
-        return redirect()->back();
-    })->name('conteo-sobres.store');
-
-    Route::get('/informe-final', function () {
-        return Inertia::render('InformeFinal');
-    })->name('informe-final');
+    // Informe Final
+    Route::get('/informe-final', [\App\Http\Controllers\InformeFinalController::class, 'index'])
+        ->name('informe-final');
 
     Route::get('/informe-final/pdf', function () {
         // Placeholder: generar PDF
@@ -117,4 +118,12 @@ Route::middleware([
         // Placeholder: generar Excel
         return response()->json(['message' => 'Generando Excel...']);
     })->name('informe-final.excel');
+
+    // Consolidado
+    Route::get('/consolidado', [\App\Http\Controllers\ConsolidadoController::class, 'index'])
+        ->name('consolidado');
+    Route::get('/consolidado/pdf', [\App\Http\Controllers\ConsolidadoController::class, 'exportPDF'])
+        ->name('consolidado.pdf');
+    Route::get('/consolidado/excel', [\App\Http\Controllers\ConsolidadoController::class, 'exportExcel'])
+        ->name('consolidado.excel');
 });
