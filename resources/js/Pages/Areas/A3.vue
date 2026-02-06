@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { useForm, Link } from '@inertiajs/vue3';
+import { useForm, Link, router } from '@inertiajs/vue3';
+import { useToast } from 'primevue/usetoast';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Card from '@/Components/Card.vue';
 import CardHeader from '@/Components/CardHeader.vue';
@@ -12,12 +13,16 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { useSillasPersonas } from '@/Composables/useSillasPersonas';
 
+const toast = useToast();
+
 const props = defineProps({
     servicio_id: [String, Number],
+    servicio: Object,
+    conteoA3: Object,
 });
 
-const INITIAL_SILLAS = {
-    totalSillas: 380,
+const INITIAL_SILLAS = props.conteoA3?.sillas || {
+    totalSillas: 0,
     sillasVacias: 0,
     totalPersonas: 0,
     totalNinos: 0,
@@ -25,7 +30,7 @@ const INITIAL_SILLAS = {
 
 const sillasPersonas = useSillasPersonas(INITIAL_SILLAS);
 
-const servidores = ref({
+const servidores = ref(props.conteoA3?.servidores || {
     servidores: 0,
     consolidacion: 0,
     logistica: 0,
@@ -51,15 +56,34 @@ const fechaHoraActual = computed(() => {
 });
 
 const form = useForm({
+    servicio_id: props.servicio_id,
     sillas: sillasPersonas.data,
     servidores: servidores.value,
+    completado: props.conteoA3?.completado || false,
 });
 
 const guardar = () => {
-    form.post(route('areas.a3.store'), {
+    form.sillas = sillasPersonas.data;
+    form.servidores = servidores.value;
+    
+    form.post(route('conteo-a3.store'), {
         preserveScroll: true,
         onSuccess: () => {
-            // Mostrar mensaje de éxito
+            if (props.servicio_id) {
+                router.visit(route('servicios.show', props.servicio_id));
+            }
+        },
+        onError: (errors) => {
+            console.error('Error al guardar:', errors);
+            const errorMessages = Object.values(errors);
+            errorMessages.forEach(msg => {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error de validación',
+                    detail: msg,
+                    life: 5000
+                });
+            });
         },
     });
 };
@@ -140,22 +164,37 @@ const guardar = () => {
             </div>
 
             <!-- Guardar -->
-            <div class="flex justify-end gap-2 pt-1">
-                <Link
-                    v-if="servicio_id"
-                    :href="route('servicios.show', servicio_id)"
-                >
-                    <SecondaryButton>
-                        Cancelar
-                    </SecondaryButton>
-                </Link>
-                <PrimaryButton
-                    class="w-full px-6 sm:w-auto"
-                    :disabled="form.processing"
-                    @click="guardar"
-                >
-                    Guardar
-                </PrimaryButton>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                        v-model="form.completado"
+                        type="checkbox"
+                        class="size-4 rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
+                    />
+                    <span class="text-sm font-medium text-gray-700">
+                        Marcar como completado
+                    </span>
+                </label>
+                <div class="flex justify-end gap-2">
+                    <Link
+                        v-if="servicio_id"
+                        :href="route('servicios.show', servicio_id)"
+                    >
+                        <SecondaryButton>
+                            Cancelar
+                        </SecondaryButton>
+                    </Link>
+                    <PrimaryButton
+                        class="w-full px-6 sm:w-auto"
+                        :disabled="form.processing"
+                        @click="guardar"
+                    >
+                        <svg class="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {{ form.completado ? 'Guardar y completar' : 'Guardar' }}
+                    </PrimaryButton>
+                </div>
             </div>
         </div>
     </AppLayout>

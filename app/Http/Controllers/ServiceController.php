@@ -161,6 +161,8 @@ class ServiceController extends Controller
         $primerConteo = $servicio->primerConteo;
         $conteoA1 = $servicio->conteoA1;
         $conteoA2 = $servicio->conteoA2;
+        $conteoA3 = $servicio->conteoA3;
+        $conteoA4 = $servicio->conteoA4;
 
         // Obtener las áreas disponibles para la sede desde la BD
         $sede = $servicio->sede;
@@ -203,6 +205,16 @@ class ServiceController extends Controller
                 $conteos[$key] = [
                     'completado' => $conteoA2->completado,
                     'actualizado_en' => $conteoA2->updated_at,
+                ];
+            } elseif ($area === 'A3' && $conteoA3) {
+                $conteos[$key] = [
+                    'completado' => $conteoA3->completado,
+                    'actualizado_en' => $conteoA3->updated_at,
+                ];
+            } elseif ($area === 'A4' && $conteoA4) {
+                $conteos[$key] = [
+                    'completado' => $conteoA4->completado,
+                    'actualizado_en' => $conteoA4->updated_at,
                 ];
             } else {
                 $conteos[$key] = [

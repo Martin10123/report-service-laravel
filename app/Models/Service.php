@@ -106,6 +106,22 @@ class Service extends Model
     }
 
     /**
+     * Get the conteo A3 for the service.
+     */
+    public function conteoA3()
+    {
+        return $this->hasOne(ConteoA3::class, 'servicio_id');
+    }
+
+    /**
+     * Get the conteo A4 for the service.
+     */
+    public function conteoA4()
+    {
+        return $this->hasOne(ConteoA4::class, 'servicio_id');
+    }
+
+    /**
      * Accesor para obtener el nombre formateado.
      */
     public function getNombreCompletoAttribute(): string

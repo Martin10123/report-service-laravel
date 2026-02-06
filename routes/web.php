@@ -75,37 +75,25 @@ Route::middleware([
     Route::delete('/conteo-a2/{id}', [\App\Http\Controllers\ConteoA2Controller::class, 'destroy'])
         ->name('conteo-a2.destroy');
 
-    Route::get('/conteo-a3', function () {
-        $servicioId = request('servicio_id');
-        
-        if (!$servicioId) {
-            return redirect()
-                ->route('servicios.index')
-                ->with('warning', 'Por favor seleccione un servicio primero.');
-        }
-        
-        return Inertia::render('Areas/A3', ['servicio_id' => $servicioId]);
-    })->name('conteo-a3');
+    // Conteo A3
+    Route::get('/conteo-a3', [\App\Http\Controllers\ConteoA3Controller::class, 'index'])
+        ->name('conteo-a3');
+    Route::post('/conteo-a3', [\App\Http\Controllers\ConteoA3Controller::class, 'store'])
+        ->name('conteo-a3.store');
+    Route::get('/conteo-a3/{servicio_id}', [\App\Http\Controllers\ConteoA3Controller::class, 'show'])
+        ->name('conteo-a3.show');
+    Route::delete('/conteo-a3/{id}', [\App\Http\Controllers\ConteoA3Controller::class, 'destroy'])
+        ->name('conteo-a3.destroy');
 
-    Route::post('/conteo-a3', function () {
-        return redirect()->back();
-    })->name('areas.a3.store');
-
-    Route::get('/conteo-a4', function () {
-        $servicioId = request('servicio_id');
-        
-        if (!$servicioId) {
-            return redirect()
-                ->route('servicios.index')
-                ->with('warning', 'Por favor seleccione un servicio primero.');
-        }
-        
-        return Inertia::render('Areas/A4', ['servicio_id' => $servicioId]);
-    })->name('conteo-a4');
-
-    Route::post('/conteo-a4', function () {
-        return redirect()->back();
-    })->name('areas.a4.store');
+    // Conteo A4
+    Route::get('/conteo-a4', [\App\Http\Controllers\ConteoA4Controller::class, 'index'])
+        ->name('conteo-a4');
+    Route::post('/conteo-a4', [\App\Http\Controllers\ConteoA4Controller::class, 'store'])
+        ->name('conteo-a4.store');
+    Route::get('/conteo-a4/{servicio_id}', [\App\Http\Controllers\ConteoA4Controller::class, 'show'])
+        ->name('conteo-a4.show');
+    Route::delete('/conteo-a4/{id}', [\App\Http\Controllers\ConteoA4Controller::class, 'destroy'])
+        ->name('conteo-a4.destroy');
 
     Route::get('/conteo-sobres', function () {
         $servicioId = request('servicio_id');
