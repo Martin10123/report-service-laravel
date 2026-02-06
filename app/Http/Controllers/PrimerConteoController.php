@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Traits\RequiresService;
 use App\Models\Service;
 use App\Repositories\PrimerConteoRepository;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ use Exception;
 
 class PrimerConteoController extends Controller
 {
+    use RequiresService;
+
     protected PrimerConteoRepository $primerConteoRepository;
 
     public function __construct(PrimerConteoRepository $primerConteoRepository)
@@ -23,22 +26,19 @@ class PrimerConteoController extends Controller
     /**
      * Display the form for primer conteo.
      */
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         try {
-            $servicioId = $request->input('servicio_id');
-
-            if (!$servicioId) {
-                return Inertia::render('Servicios/PrimerConteo', [
-                    'error' => 'No se ha seleccionado un servicio',
-                ]);
+            // Usar el trait para obtener el servicio o redirigir
+            $servicio = $this->requireService($request);
+            
+            // Si es una redirección, retornarla
+            if ($servicio instanceof \Illuminate\Http\RedirectResponse) {
+                return $servicio;
             }
 
-            // Obtener el servicio con su sede
-            $servicio = Service::with('sede')->findOrFail($servicioId);
-
             // Obtener primer conteo existente si existe
-            $primerConteo = $this->primerConteoRepository->findByServicioId($servicioId);
+            $primerConteo = $this->primerConteoRepository->findByServicioId($servicio->id);
 
             // Si no existe, crear estructura inicial con las áreas del servicio
             if (!$primerConteo) {

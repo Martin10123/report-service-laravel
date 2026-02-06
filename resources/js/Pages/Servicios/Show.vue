@@ -1,10 +1,12 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { computed } from 'vue';
 import { formatearHora } from '@/Utils/dateHelpers';
+
+const page = usePage();
 
 const props = defineProps({
     servicio: {
@@ -15,14 +17,17 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    areasDisponibles: {
-        type: Array,
-        default: () => ['A1', 'A2', 'A3', 'A4'],
-    },
     tieneParqueadero: {
         type: Boolean,
         default: false,
     },
+});
+
+// Obtener áreas desde el middleware global
+const areasDisponibles = computed(() => {
+    const areas = page.props.areasDisponibles || [];
+    // Convertir objetos de áreas a códigos simples para mantener compatibilidad
+    return areas.map(area => area.codigo || area);
 });
 
 const servicio = props.servicio;
@@ -131,7 +136,7 @@ const secciones = computed(() => {
         
         // Para secciones de área, verificar si está en areasDisponibles
         if (seccion.area) {
-            return props.areasDisponibles.includes(seccion.area);
+            return areasDisponibles.value.includes(seccion.area);
         }
         
         return true;

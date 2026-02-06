@@ -50,14 +50,47 @@ class HandleInertiaRequests extends Middleware
             $servicio = \App\Models\Service::with('sede')->find($servicioActualId);
             if ($servicio && $servicio->sede) {
                 $sedeActual = $servicio->sede;
+                \Log::info('🎯 Servicio seleccionado, usando sede del servicio', [
+                    'servicio_id' => $servicioActualId,
+                    'sede_id' => $sedeActual->id,
+                    'sede_nombre' => $sedeActual->nombre,
+                ]);
             }
         }
+
+        $opcionesDisponibles = $sedeActual ? $sedeActual->getOpcionesDisponibles() : [];
+        $areasDisponibles = $sedeActual 
+            ? $sedeActual->areas()
+                ->select('areas.id', 'areas.codigo', 'areas.nombre')
+                ->get()
+                ->map(fn($area) => [
+                    'id' => $area->id,
+                    'codigo' => $area->codigo,
+                    'nombre' => $area->nombre,
+                ])
+                ->values()
+                ->toArray()
+            : [];
+
+        \Log::info('📤 Compartiendo con frontend', [
+            'sede_actual' => $sedeActual ? $sedeActual->nombre : 'ninguna',
+            'opciones_count' => count($opcionesDisponibles),
+            'opciones' => $opcionesDisponibles,
+            'areas_count' => count($areasDisponibles),
+            'areas' => $areasDisponibles,
+        ]);
 
         return [
             ...parent::share($request),
             'sedes' => fn () => Sede::activas()->orderBy('nombre')->get(),
             'sedeActual' => fn () => $sedeActual,
-            'opcionesDisponibles' => fn () => $sedeActual ? $sedeActual->getOpcionesDisponibles() : [],
+            'opcionesDisponibles' => fn () => $opcionesDisponibles,
+            'areasDisponibles' => fn () => $areasDisponibles,
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'warning' => fn () => $request->session()->get('warning'),
+            ],
         ];
     }
 }

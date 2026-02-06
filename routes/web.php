@@ -77,6 +77,13 @@ Route::middleware([
 
     Route::get('/conteo-a3', function () {
         $servicioId = request('servicio_id');
+        
+        if (!$servicioId) {
+            return redirect()
+                ->route('servicios.index')
+                ->with('warning', 'Por favor seleccione un servicio primero.');
+        }
+        
         return Inertia::render('Areas/A3', ['servicio_id' => $servicioId]);
     })->name('conteo-a3');
 
@@ -86,6 +93,13 @@ Route::middleware([
 
     Route::get('/conteo-a4', function () {
         $servicioId = request('servicio_id');
+        
+        if (!$servicioId) {
+            return redirect()
+                ->route('servicios.index')
+                ->with('warning', 'Por favor seleccione un servicio primero.');
+        }
+        
         return Inertia::render('Areas/A4', ['servicio_id' => $servicioId]);
     })->name('conteo-a4');
 

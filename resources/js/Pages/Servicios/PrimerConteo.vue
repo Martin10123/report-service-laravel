@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useForm, usePage } from '@inertiajs/vue3';import { useToast } from 'primevue/usetoast';import AppLayout from '@/Layouts/AppLayout.vue';
+import { useForm, usePage } from '@inertiajs/vue3';
+import { useToast } from 'primevue/usetoast';
+import AppLayout from '@/Layouts/AppLayout.vue';
 import Card from '@/Components/Card.vue';
 import CardHeader from '@/Components/CardHeader.vue';
 import CardTitle from '@/Components/CardTitle.vue';
@@ -9,6 +11,7 @@ import CardContent from '@/Components/CardContent.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import NoServiceSelected from '@/Components/NoServiceSelected.vue';
 import { router } from '@inertiajs/vue3';
 
 const toast = useToast();
@@ -19,7 +22,8 @@ const page = usePage();
 const props = defineProps({
     servicio: {
         type: Object,
-        required: true,
+        required: false,
+        default: null,
     },
     primerConteo: {
         type: Object,
@@ -27,7 +31,8 @@ const props = defineProps({
     },
     areas: {
         type: Array,
-        required: true,
+        required: false,
+        default: () => [],
     },
     error: {
         type: String,
@@ -61,19 +66,23 @@ const fechaHoraActual = computed(() => {
     });
 });
 
-// Form para guardar
-const form = useForm({
+// Form para guardar (solo si hay servicio)
+const form = props.servicio ? useForm({
     servicio_id: props.servicio.id,
     areas: areas.value,
     completado: props.primerConteo?.completado || false,
-});
+}) : null;
 
 // Sincronizar cambios de areas con el form
-watch(areas, (newAreas) => {
-    form.areas = newAreas;
-}, { deep: true });
+if (form) {
+    watch(areas, (newAreas) => {
+        form.areas = newAreas;
+    }, { deep: true });
+}
 
 const guardar = () => {
+    if (!form) return;
+    
     form.post(route('primer-conteo.store'), {
         preserveScroll: true,
         onSuccess: () => {
@@ -102,7 +111,11 @@ const refrescar = () => {
 
 <template>
     <AppLayout title="Primer Conteo">
-        <div class="space-y-2 sm:space-y-3 animate-in fade-in">
+        <!-- Mostrar mensaje si no hay servicio seleccionado -->
+        <NoServiceSelected v-if="!servicio" />
+
+        <!-- Contenido normal cuando hay servicio -->
+        <div v-else class="space-y-2 sm:space-y-3 animate-in fade-in">
             <!-- Header -->
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h1 class="m-0 text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">

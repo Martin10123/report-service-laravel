@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
@@ -7,6 +7,8 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import SidebarLink from '@/Components/SidebarLink.vue';
 import Toast from 'primevue/toast';
+import { useToast } from 'primevue/usetoast';
+import { useFlashMessages } from '@/Composables/useFlashMessages';
 
 defineProps({
     title: String,
@@ -14,16 +16,23 @@ defineProps({
 
 const page = usePage();
 
+useFlashMessages();
+
 // Obtener datos del backend
 const isSuperUser = computed(() => page.props.auth?.is_super_user ?? true);
 const sedes = computed(() => page.props.sedes || []);
 const sedeActual = computed(() => page.props.sedeActual || null);
-const opcionesDisponiblesBackend = computed(() => page.props.opcionesDisponibles || []);
+const opcionesDisponiblesBackend = computed(() => {
+    const opciones = page.props.opcionesDisponibles || [];
+    return opciones;
+});
+const areasDisponibles = computed(() => {
+    const areas = page.props.areasDisponibles || [];
+    
+    return areas;
+});
 
-// Servicio actual desde props (servicioActual o servicio)
-// Solo usar servicio si estamos en una página que lo requiere y no se ha solicitado limpiar
 const servicioActual = computed(() => {
-    // Si servicioActual existe en las props globales, usarlo (viene de la sesión)
     const servicio = page.props.servicioActual;
     if (!servicio) return null;
 
@@ -38,14 +47,12 @@ const servicioActual = computed(() => {
     };
 });
 
-// Verificar si una opción está disponible
-// Ahora usa la configuración que viene del backend
 const opcionDisponible = (nombreRuta) => {
-    // Si no hay opciones del backend, mostrar todo (fallback)
     if (!opcionesDisponiblesBackend.value || opcionesDisponiblesBackend.value.length === 0) {
         return true;
     }
-    return opcionesDisponiblesBackend.value.includes(nombreRuta);
+    const disponible = opcionesDisponiblesBackend.value.includes(nombreRuta);
+    return disponible;
 };
 
 const formatearFechaCorta = (fecha) => {
@@ -84,7 +91,6 @@ const closeSidebar = () => { sidebarOpen.value = false; };
 
 const selectSede = (sede) => {
     showingSedeDropdown.value = false;
-    // Cambiar la sede en el backend y recargar las opciones
     router.get(route('sede.switch', sede.slug), {}, { preserveState: false });
 };
 
@@ -288,8 +294,8 @@ const r = (name, params = {}) => {
             <aside
                 :class="[
                     'fixed inset-y-0 left-0 z-40 w-64 border-r border-gray-200 bg-white transition-transform duration-200 ease-out',
-                    'lg:sticky lg:inset-auto lg:h-screen lg:z-0',
-                    servicioActual ? 'pt-[6rem] lg:pt-0 lg:top-[6rem]' : 'pt-14 lg:pt-0 lg:top-14',
+                    'lg:sticky lg:inset-auto lg:z-0',
+                    servicioActual ? 'pt-[6rem] lg:pt-0 lg:top-[6rem] lg:h-[calc(100vh-6rem)]' : 'pt-14 lg:pt-0 lg:top-14 lg:h-[calc(100vh-3.5rem)]',
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
                 ]"
             >
@@ -307,23 +313,19 @@ const r = (name, params = {}) => {
                             </svg>
                             Primer Conteo
                         </SidebarLink>
-                        <div v-if="opcionDisponible('conteo-a1') || opcionDisponible('conteo-a2') || opcionDisponible('conteo-a3') || opcionDisponible('conteo-a4')" class="my-2 border-t border-gray-100" />
-                        <SidebarLink v-if="opcionDisponible('conteo-a1')" :href="r('conteo-a1')" :active="route().current('conteo-a1')" @click="closeSidebar">
-                            <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A1</span>
-                            Conteo A1
-                        </SidebarLink>
-                        <SidebarLink v-if="opcionDisponible('conteo-a2')" :href="r('conteo-a2')" :active="route().current('conteo-a2')" @click="closeSidebar">
-                            <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A2</span>
-                            Conteo A2
-                        </SidebarLink>
-                        <SidebarLink v-if="opcionDisponible('conteo-a3')" :href="r('conteo-a3')" :active="route().current('conteo-a3')" @click="closeSidebar">
-                            <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A3</span>
-                            Conteo A3
-                        </SidebarLink>
-                        <SidebarLink v-if="opcionDisponible('conteo-a4')" :href="r('conteo-a4')" :active="route().current('conteo-a4')" @click="closeSidebar">
-                            <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">A4</span>
-                            Conteo A4
-                        </SidebarLink>
+                        <div v-if="areasDisponibles.length > 0" class="my-2 border-t border-gray-100" />
+                        <!-- Renderizar dinámicamente las áreas -->
+                        <template v-for="area in areasDisponibles" :key="area.id || area.codigo || area">
+                            <SidebarLink 
+                                v-if="area.codigo && opcionDisponible(`conteo-${area.codigo.toLowerCase()}`)" 
+                                :href="r(`conteo-${area.codigo.toLowerCase()}`)" 
+                                :active="route().current(`conteo-${area.codigo.toLowerCase()}`)" 
+                                @click="closeSidebar"
+                            >
+                                <span class="flex size-5 shrink-0 items-center justify-center rounded bg-gray-100 text-xs font-semibold text-gray-600">{{ area.codigo }}</span>
+                                Conteo {{ area.codigo }}
+                            </SidebarLink>
+                        </template>
                         <div v-if="opcionDisponible('conteo-sobres')" class="my-2 border-t border-gray-100" />
                         <SidebarLink v-if="opcionDisponible('conteo-sobres')" :href="r('conteo-sobres')" :active="route().current('conteo-sobres')" @click="closeSidebar">
                             <svg class="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

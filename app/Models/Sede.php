@@ -54,6 +54,14 @@ class Sede extends Model
     }
 
     /**
+     * Get the areas associated with this sede.
+     */
+    public function areas()
+    {
+        return $this->belongsToMany(Area::class, 'sede_areas', 'sede_id', 'area_id');
+    }
+
+    /**
      * Scope a query to only include active sedes.
      */
     public function scopeActivas($query)
@@ -67,6 +75,18 @@ class Sede extends Model
      * @return array
      */
     public function getAreas(): array
+    {
+        // Retornar áreas desde la relación con la base de datos
+        return $this->areas()->pluck('codigo')->toArray();
+    }
+
+    /**
+     * Get the areas available for this sede (legacy support).
+     * If no areas are assigned in DB, fallback to numero_areas.
+     * 
+     * @return array
+     */
+    public function getAreasLegacy(): array
     {
         $areas = [];
         for ($i = 1; $i <= $this->numero_areas; $i++) {
@@ -93,20 +113,25 @@ class Sede extends Model
      */
     public function getOpcionesDisponibles(): array
     {
-        // Si no tiene opciones configuradas, devolver todas por defecto
-        if (empty($this->opciones_disponibles)) {
-            return [
-                'primer-conteo',
-                'conteo-a1',
-                'conteo-a2',
-                'conteo-a3',
-                'conteo-a4',
-                'conteo-sobres',
-                'informe-final',
-            ];
+        // Si tiene opciones configuradas manualmente, usarlas
+        if (!empty($this->opciones_disponibles)) {
+            return $this->opciones_disponibles;
         }
 
-        return $this->opciones_disponibles;
+        // Generar opciones dinámicamente basándose en las áreas
+        $opciones = ['primer-conteo'];
+        
+        // Agregar opciones de conteo para cada área
+        $areas = $this->getAreas();
+        foreach ($areas as $area) {
+            $opciones[] = 'conteo-' . strtolower($area);
+        }
+        
+        // Agregar opciones finales
+        $opciones[] = 'conteo-sobres';
+        $opciones[] = 'informe-final';
+
+        return $opciones;
     }
 
     /**

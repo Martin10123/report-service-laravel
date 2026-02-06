@@ -162,16 +162,24 @@ class ServiceController extends Controller
         $conteoA1 = $servicio->conteoA1;
         $conteoA2 = $servicio->conteoA2;
 
-        // Obtener las áreas disponibles para la sede
+        // Obtener las áreas disponibles para la sede desde la BD
         $sede = $servicio->sede;
         
         if ($sede) {
-            $areasDisponibles = $sede->getAreas();
+            // Obtener áreas desde la relación en la base de datos como objetos
+            $areasDisponibles = $sede->areas()->select('areas.codigo')->pluck('codigo')->toArray();
             $tieneParqueadero = $sede->tiene_parqueadero;
+            
+            Log::info('Áreas disponibles para sede', [
+                'sede_id' => $sede->id,
+                'sede_nombre' => $sede->nombre,
+                'areas' => $areasDisponibles
+            ]);
         } else {
             // Fallback si no hay sede
-            $areasDisponibles = ['A1', 'A2', 'A3', 'A4'];
+            $areasDisponibles = [];
             $tieneParqueadero = false;
+            Log::warning('Servicio sin sede', ['servicio_id' => $id]);
         }
 
         $conteos = [
@@ -210,7 +218,7 @@ class ServiceController extends Controller
         return Inertia::render('Servicios/Show', [
             'servicio' => $servicio,
             'conteos' => $conteos,
-            'areasDisponibles' => $areasDisponibles,
+            // areasDisponibles ya viene del middleware global, no necesitamos pasarlo aquí
             'tieneParqueadero' => $tieneParqueadero,
         ]);
     }

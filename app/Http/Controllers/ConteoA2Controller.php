@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Traits\RequiresService;
 use App\Models\Service;
 use App\Repositories\ConteoA2Repository;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ use Exception;
 
 class ConteoA2Controller extends Controller
 {
+    use RequiresService;
+
     protected ConteoA2Repository $conteoA2Repository;
 
     public function __construct(ConteoA2Repository $conteoA2Repository)
@@ -23,22 +26,19 @@ class ConteoA2Controller extends Controller
     /**
      * Display the form for conteo A2.
      */
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         try {
-            $servicioId = $request->input('servicio_id');
-
-            if (!$servicioId) {
-                return Inertia::render('Areas/A2', [
-                    'error' => 'No se ha seleccionado un servicio',
-                ]);
+            // Usar el trait para obtener el servicio o redirigir
+            $servicio = $this->requireService($request);
+            
+            // Si es una redirección, retornarla
+            if ($servicio instanceof \Illuminate\Http\RedirectResponse) {
+                return $servicio;
             }
 
-            // Obtener el servicio con su sede
-            $servicio = Service::with('sede')->findOrFail($servicioId);
-
             // Obtener conteo A2 existente si existe
-            $conteoA2 = $this->conteoA2Repository->findByServicioId($servicioId);
+            $conteoA2 = $this->conteoA2Repository->findByServicioId($servicio->id);
 
             // Datos iniciales o existentes
             $data = null;
@@ -56,7 +56,7 @@ class ConteoA2Controller extends Controller
                     'numero_servicio' => $servicio->numero_servicio,
                 ],
                 'conteoA2' => $data ? array_merge($data, ['completado' => $completado]) : null,
-                'servicio_id' => $servicioId,
+                'servicio_id' => $servicio->id,
             ]);
 
         } catch (Exception $e) {

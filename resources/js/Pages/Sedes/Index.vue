@@ -8,7 +8,8 @@ import CardTitle from '@/Components/CardTitle.vue';
 import CardContent from '@/Components/CardContent.vue';
 
 const props = defineProps({
-    sedes: Array,
+    todasSedes: Array,
+    areasDisponibles: Array,
 });
 
 const editingSede = ref(null);
@@ -17,7 +18,7 @@ const editForm = useForm({
     tiene_areas_multiples: false,
     tiene_parqueadero: false,
     tiene_gradas: false,
-    numero_areas: 1,
+    areas: [],
 });
 
 const startEdit = (sede) => {
@@ -26,7 +27,7 @@ const startEdit = (sede) => {
     editForm.tiene_areas_multiples = sede.tiene_areas_multiples;
     editForm.tiene_parqueadero = sede.tiene_parqueadero;
     editForm.tiene_gradas = sede.tiene_gradas;
-    editForm.numero_areas = sede.numero_areas;
+    editForm.areas = sede.areas ? sede.areas.map(a => a.id) : [];
 };
 
 const cancelEdit = () => {
@@ -47,15 +48,27 @@ const saveEdit = (sedeId) => {
 const toggleActive = (sedeId) => {
     useForm({}).post(route('sedes.toggle-active', sedeId), {
         preserveScroll: true,
+        preserveState: false,  // Forzar recarga completa de props compartidos
     });
 };
 
 const getSedeAreas = (sede) => {
-    const areas = [];
-    for (let i = 1; i <= sede.numero_areas; i++) {
-        areas.push(`A${i}`);
+    if (sede.areas && sede.areas.length > 0) {
+        return sede.areas.map(a => a.codigo).join(', ');
     }
-    return areas.join(', ');
+    return 'Sin áreas';
+};
+
+const getAreasFromIds = (areaIds) => {
+    if (!areaIds || areaIds.length === 0) return 'Sin áreas';
+    return areaIds
+        .map(id => props.areasDisponibles.find(a => a.id === id)?.codigo)
+        .filter(Boolean)
+        .join(', ');
+};
+
+const canSelectMoreAreas = (currentAreas) => {
+    return currentAreas.length < 4;
 };
 </script>
 
@@ -76,7 +89,7 @@ const getSedeAreas = (sede) => {
 
             <!-- Sedes List -->
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <Card v-for="sede in sedes" :key="sede.id">
+                <Card v-for="sede in todasSedes" :key="sede.id">
                     <CardContent>
                         <div v-if="editingSede === sede.id" class="space-y-4 p-4">
                             <!-- Edit Form -->
@@ -96,22 +109,39 @@ const getSedeAreas = (sede) => {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-700">
-                                        Número de áreas
+                                <div class="lg:col-span-3">
+                                    <label class="block text-xs font-medium text-gray-700 mb-2">
+                                        Áreas asignadas (máximo 4)
                                     </label>
-                                    <input
-                                        v-model.number="editForm.numero_areas"
-                                        type="number"
-                                        min="1"
-                                        max="10"
-                                        class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-1.5 text-center text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    >
-                                    <p class="mt-1 text-center text-xs text-gray-500">
-                                        {{ getSedeAreas({ numero_areas: editForm.numero_areas }) }}
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <label
+                                            v-for="area in areasDisponibles"
+                                            :key="area.id"
+                                            :class="[
+                                                'flex items-center gap-2 rounded-lg border p-2 transition cursor-pointer',
+                                                editForm.areas.includes(area.id)
+                                                    ? 'border-blue-500 bg-blue-50'
+                                                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100',
+                                                !canSelectMoreAreas(editForm.areas) && !editForm.areas.includes(area.id)
+                                                    ? 'opacity-50 cursor-not-allowed'
+                                                    : ''
+                                            ]"
+                                        >
+                                            <input
+                                                v-model="editForm.areas"
+                                                type="checkbox"
+                                                :value="area.id"
+                                                :disabled="!canSelectMoreAreas(editForm.areas) && !editForm.areas.includes(area.id)"
+                                                class="size-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            >
+                                            <span class="text-sm font-medium text-gray-700">{{ area.codigo }} - {{ area.nombre }}</span>
+                                        </label>
+                                    </div>
+                                    <p class="mt-2 text-center text-xs text-gray-500">
+                                        Seleccionadas: {{ getAreasFromIds(editForm.areas) }} ({{ editForm.areas.length }}/4)
                                     </p>
-                                    <div v-if="editForm.errors.numero_areas" class="mt-1 text-center text-xs text-red-600">
-                                        {{ editForm.errors.numero_areas }}
+                                    <div v-if="editForm.errors.areas" class="mt-1 text-center text-xs text-red-600">
+                                        {{ editForm.errors.areas }}
                                     </div>
                                 </div>
 
@@ -228,7 +258,7 @@ const getSedeAreas = (sede) => {
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                     </svg>
                                     <span class="text-sm font-semibold text-gray-900">
-                                        {{ sede.numero_areas }}
+                                        {{ sede.areas?.length || 0 }}
                                     </span>
                                     <span class="text-xs text-gray-400">{{ getSedeAreas(sede) }}</span>
                                 </div>
@@ -289,7 +319,7 @@ const getSedeAreas = (sede) => {
                 </Card>
             </div>
 
-            <div v-if="!sedes || sedes.length === 0" class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+            <div v-if="!todasSedes || todasSedes.length === 0" class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
                 <svg class="mx-auto size-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>

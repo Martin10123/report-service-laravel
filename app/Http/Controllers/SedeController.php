@@ -14,10 +14,12 @@ class SedeController extends Controller
      */
     public function index()
     {
-        $sedes = Sede::orderBy('nombre')->get();
+        $sedes = Sede::with('areas')->orderBy('nombre')->get();
+        $areas = \App\Models\Area::activas()->orderBy('codigo')->get();
         
         return Inertia::render('Sedes/Index', [
-            'sedes' => $sedes,
+            'todasSedes' => $sedes,
+            'areasDisponibles' => $areas,
         ]);
     }
 
@@ -31,7 +33,8 @@ class SedeController extends Controller
             'tiene_areas_multiples' => 'boolean',
             'tiene_parqueadero' => 'boolean',
             'tiene_gradas' => 'boolean',
-            'numero_areas' => 'required|integer|min:1|max:10',
+            'areas' => 'nullable|array|max:4',
+            'areas.*' => 'exists:areas,id',
         ]);
 
         // Actualizar el slug si el nombre cambió
@@ -39,7 +42,17 @@ class SedeController extends Controller
             $validated['slug'] = Str::slug($validated['nombre']);
         }
 
+        // Actualizar numero_areas basado en las áreas seleccionadas
+        $validated['numero_areas'] = isset($validated['areas']) ? count($validated['areas']) : 0;
+
+        // Extraer áreas antes de actualizar
+        $areasIds = $validated['areas'] ?? [];
+        unset($validated['areas']);
+
         $sede->update($validated);
+
+        // Sincronizar áreas
+        $sede->areas()->sync($areasIds);
 
         return back()->with('success', 'Sede actualizada correctamente');
     }

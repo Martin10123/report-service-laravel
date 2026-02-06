@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Traits\RequiresService;
 use App\Models\Service;
 use App\Repositories\ConteoA1Repository;
 use Illuminate\Http\Request;
@@ -10,9 +11,12 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class ConteoA1Controller extends Controller
 {
+    use RequiresService;
+
     protected ConteoA1Repository $conteoA1Repository;
 
     public function __construct(ConteoA1Repository $conteoA1Repository)
@@ -23,22 +27,19 @@ class ConteoA1Controller extends Controller
     /**
      * Display the form for conteo A1.
      */
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         try {
-            $servicioId = $request->input('servicio_id');
-
-            if (!$servicioId) {
-                return Inertia::render('Areas/A1', [
-                    'error' => 'No se ha seleccionado un servicio',
-                ]);
+            // Usar el trait para obtener el servicio o redirigir
+            $servicio = $this->requireService($request);
+            
+            // Si es una redirección, retornarla
+            if ($servicio instanceof RedirectResponse) {
+                return $servicio;
             }
 
-            // Obtener el servicio con su sede
-            $servicio = Service::with('sede')->findOrFail($servicioId);
-
             // Obtener conteo A1 existente si existe
-            $conteoA1 = $this->conteoA1Repository->findByServicioId($servicioId);
+            $conteoA1 = $this->conteoA1Repository->findByServicioId($servicio->id);
 
             // Datos iniciales o existentes
             $data = null;
@@ -56,7 +57,7 @@ class ConteoA1Controller extends Controller
                     'numero_servicio' => $servicio->numero_servicio,
                 ],
                 'conteoA1' => $data ? array_merge($data, ['completado' => $completado]) : null,
-                'servicio_id' => $servicioId,
+                'servicio_id' => $servicio->id,
             ]);
 
         } catch (Exception $e) {
