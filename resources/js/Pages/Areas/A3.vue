@@ -50,25 +50,15 @@ const totalPersonasCalculado = computed(() => {
     const totalARestar = sillasPersonas.data.totalNinos + servidores.value.servidores;
     const resultado = Math.max(0, sillasOcupadas - totalARestar);
     
-    console.log('=== A3 Cálculo Total Personas ===');
-    console.log('Total sillas:', sillasPersonas.data.totalSillas);
-    console.log('Sillas vacías:', sillasPersonas.data.sillasVacias);
-    console.log('Sillas ocupadas:', sillasOcupadas);
-    console.log('Total niños A3:', sillasPersonas.data.totalNinos);
-    console.log('Solo Servidores:', servidores.value.servidores);
-    console.log('Total a restar:', totalARestar);
-    console.log('Resultado final:', resultado);
-    console.log('===================================');
-    
     return resultado;
 });
 
-// Sincronizar el valor calculado con sillasPersonas.data
-watch([() => sillasPersonas.data.totalSillas, () => sillasPersonas.data.sillasVacias, () => sillasPersonas.data.totalNinos, () => servidores.value.servidores], () => {
-    console.log('Watch ejecutándose en A3');
-    sillasPersonas.data.totalPersonas = totalPersonasCalculado.value;
-    console.log('Nuevo valor de totalPersonas:', sillasPersonas.data.totalPersonas);
-}, { immediate: true });
+// Calcular límites máximos para servidores (restando niños)
+const limiteServidores = computed(() => {
+    const sillasOcupadas = sillasPersonas.data.totalSillas - sillasPersonas.data.sillasVacias;
+    const disponibleParaServidores = Math.max(0, sillasOcupadas - sillasPersonas.data.totalNinos);
+    return disponibleParaServidores;
+});
 
 const fechaHoraActual = computed(() => {
     const fecha = new Date();
@@ -83,15 +73,38 @@ const fechaHoraActual = computed(() => {
 
 const form = useForm({
     servicio_id: props.servicio_id,
-    sillas: sillasPersonas.data,
-    servidores: servidores.value,
+    sillas: { ...sillasPersonas.data },
+    servidores: { ...servidores.value },
     completado: props.conteoA3?.completado || false,
 });
 
-const guardar = () => {
-    form.sillas = sillasPersonas.data;
-    form.servidores = servidores.value;
+// Sincronizar el valor calculado con sillasPersonas.data y form
+watch([() => sillasPersonas.data.totalSillas, () => sillasPersonas.data.sillasVacias, () => sillasPersonas.data.totalNinos, () => servidores.value.servidores], () => {
+    console.log('🔵 [A3 Watch Principal] Ejecutándose');
+    console.log('🔵 Valor calculado:', totalPersonasCalculado.value);
     
+    sillasPersonas.data.totalPersonas = totalPersonasCalculado.value;
+    form.sillas.totalPersonas = totalPersonasCalculado.value;
+    
+    console.log('🔵 Después - totalPersonas:', sillasPersonas.data.totalPersonas);
+}, { immediate: true });
+
+// Sincronizar cambios manuales de sillasPersonas (excepto totalPersonas que es calculado)
+watch([() => sillasPersonas.data.totalSillas, () => sillasPersonas.data.sillasVacias, () => sillasPersonas.data.totalNinos], () => {
+    form.sillas.totalSillas = sillasPersonas.data.totalSillas;
+    form.sillas.sillasVacias = sillasPersonas.data.sillasVacias;
+    form.sillas.totalNinos = sillasPersonas.data.totalNinos;
+    // NO sincronizamos totalPersonas aquí porque se calcula automáticamente
+});
+
+// Sincronizar servidores con form.servidores
+watch([() => servidores.value.servidores, () => servidores.value.consolidacion, () => servidores.value.logistica], () => {
+    form.servidores = { ...servidores.value };
+});
+
+const guardar = () => {
+    console.log('💾 [A3] Guardando form.sillas:', JSON.stringify(form.sillas));
+    console.log('💾 [A3] totalPersonas a guardar:', form.sillas.totalPersonas);
     form.post(route('conteo-a3.store'), {
         preserveScroll: true,
         onSuccess: () => {
@@ -181,9 +194,23 @@ const guardar = () => {
                         <ServidoresGridCard
                             title="Servidores"
                             :fields="[
-                                { label: 'Servidores', value: servidores.servidores, onChange: (v) => updateServidor('servidores', v) },
-                                { label: 'Consolidación', value: servidores.consolidacion, onChange: (v) => updateServidor('consolidacion', v) },
-                                { label: 'Logística', value: servidores.logistica, onChange: (v) => updateServidor('logistica', v) },
+                                { 
+                                    label: 'Servidores', 
+                                    value: servidores.servidores, 
+                                    max: limiteServidores,
+                                    error: servidores.servidores > limiteServidores ? `Máximo ${limiteServidores} (sillas disponibles después de niños)` : '',
+                                    onChange: (v) => updateServidor('servidores', v) 
+                                },
+                                { 
+                                    label: 'Consolidación', 
+                                    value: servidores.consolidacion, 
+                                    onChange: (v) => updateServidor('consolidacion', v) 
+                                },
+                                { 
+                                    label: 'Logística', 
+                                    value: servidores.logistica, 
+                                    onChange: (v) => updateServidor('logistica', v) 
+                                },
                             ]"
                         />
                     </div>

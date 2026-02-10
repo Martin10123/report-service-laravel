@@ -40,7 +40,22 @@ class HandleInertiaRequests extends Middleware
         $sedeActualId = session('sede_actual_id');
         $sedeActual = null;
 
-        if ($sedeActualId) {
+        // Si el usuario está autenticado y tiene sede preferida, priorizarla sobre la sesión
+        if ($request->user() && $request->user()->sede_preferida_id) {
+            $sedePreferida = Sede::find($request->user()->sede_preferida_id);
+            
+            // Si no hay sede en sesión O la sesión tiene una sede diferente a la preferida
+            // usar la sede preferida del usuario
+            if (!$sedeActualId || $sedeActualId != $request->user()->sede_preferida_id) {
+                if ($sedePreferida) {
+                    $sedeActual = $sedePreferida;
+                    session(['sede_actual_id' => $sedeActual->id]);
+                }
+            }
+        }
+
+        // Si no se estableció la sede preferida, usar la de sesión
+        if (!$sedeActual && $sedeActualId) {
             $sedeActual = Sede::find($sedeActualId);
         }
 
@@ -50,11 +65,14 @@ class HandleInertiaRequests extends Middleware
             $servicio = \App\Models\Service::with('sede')->find($servicioActualId);
             if ($servicio && $servicio->sede) {
                 $sedeActual = $servicio->sede;
-                \Log::info('🎯 Servicio seleccionado, usando sede del servicio', [
-                    'servicio_id' => $servicioActualId,
-                    'sede_id' => $sedeActual->id,
-                    'sede_nombre' => $sedeActual->nombre,
-                ]);
+            }
+        }
+
+        // Si aún no hay sede seleccionada, usar Villa Grande por defecto
+        if (!$sedeActual) {
+            $sedeActual = Sede::where('slug', 'villa-grande')->first();
+            if ($sedeActual) {
+                session(['sede_actual_id' => $sedeActual->id]);
             }
         }
 
@@ -71,14 +89,6 @@ class HandleInertiaRequests extends Middleware
                 ->values()
                 ->toArray()
             : [];
-
-        \Log::info('📤 Compartiendo con frontend', [
-            'sede_actual' => $sedeActual ? $sedeActual->nombre : 'ninguna',
-            'opciones_count' => count($opcionesDisponibles),
-            'opciones' => $opcionesDisponibles,
-            'areas_count' => count($areasDisponibles),
-            'areas' => $areasDisponibles,
-        ]);
 
         return [
             ...parent::share($request),

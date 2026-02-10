@@ -29,6 +29,8 @@ defineProps({
                     :key="field.label"
                     :label="field.label"
                     :model-value="field.value"
+                    :max="field.max || 9999"
+                    :error="field.error || ''"
                     @update:model-value="field.onChange"
                 />
             </div>

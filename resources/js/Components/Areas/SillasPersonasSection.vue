@@ -67,6 +67,7 @@ const update = (key, value) => {
                         :label="ninosLabel"
                         :model-value="data.totalNinos"
                         :max="data.totalPersonas"
+                        :error="data.totalNinos > data.totalPersonas ? `No puede haber más de ${data.totalPersonas} niños` : ''"
                         @update:model-value="update('totalNinos', $event)"
                     />
                 </div>

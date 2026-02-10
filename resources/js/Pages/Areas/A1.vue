@@ -68,20 +68,18 @@ const totalPersonasCalculado = computed(() => {
     console.log('Logística:', servidores.value.logistica);
     console.log('Servidor de Pastora:', servidorasPastora.value.filter((n) => n.trim()).length);
     console.log('Servidores total:', servidoresTotal);
-    console.log('Resultado final:', resultado);
+    console.log('Resultado final (Total Personas incluye niños):', resultado);
+    console.log('Niños A1 (subconjunto de Total Personas):', sillasPersonas.data.totalNinos);
     console.log('===================================');
     
     return resultado;
 });
 
-// Sincronizar el valor calculado con sillasPersonas.data
-watch([() => sillasPersonas.data.totalSillas, () => sillasPersonas.data.sillasVacias, () => servidores.value.servidores, () => servidores.value.logistica, servidorasPastora], () => {
-    console.log('Watch ejecutándose en A1');
-    console.log('Valor calculado:', totalPersonasCalculado.value);
-    console.log('Asignando a sillasPersonas.data.totalPersonas');
-    sillasPersonas.data.totalPersonas = totalPersonasCalculado.value;
-    console.log('Nuevo valor de totalPersonas:', sillasPersonas.data.totalPersonas);
-}, { immediate: true, deep: true });
+// Calcular límites máximos para servidores (sin considerar niños en A1)
+const limiteServidores = computed(() => {
+    const sillasOcupadas = sillasPersonas.data.totalSillas - sillasPersonas.data.sillasVacias;
+    return Math.max(0, sillasOcupadas);
+});
 
 const fechaHoraActual = computed(() => {
     const fecha = new Date();
@@ -96,17 +94,44 @@ const fechaHoraActual = computed(() => {
 
 const form = useForm({
     servicio_id: props.servicio_id,
-    sillas: sillasPersonas.data,
-    servidores: servidores.value,
-    servidorasPastora: servidorasPastora.value,
+    sillas: { ...sillasPersonas.data },
+    servidores: { ...servidores.value },
+    servidorasPastora: [...servidorasPastora.value],
     completado: props.conteoA1?.completado || false,
 });
 
-const guardar = () => {
-    form.sillas = sillasPersonas.data;
-    form.servidores = servidores.value;
-    form.servidorasPastora = servidorasPastora.value;
+// Sincronizar el valor calculado con sillasPersonas.data y form
+watch([() => sillasPersonas.data.totalSillas, () => sillasPersonas.data.sillasVacias, () => servidores.value.servidores, () => servidores.value.logistica, servidorasPastora], () => {
+    console.log('🔵 [A1 Watch Principal] Ejecutándose');
+    console.log('🔵 Valor calculado:', totalPersonasCalculado.value);
     
+    sillasPersonas.data.totalPersonas = totalPersonasCalculado.value;
+    form.sillas.totalPersonas = totalPersonasCalculado.value;
+    
+    console.log('🔵 Después - totalPersonas:', sillasPersonas.data.totalPersonas);
+}, { immediate: true, deep: true });
+
+// Sincronizar cambios manuales de sillasPersonas (excepto totalPersonas que es calculado)
+watch([() => sillasPersonas.data.totalSillas, () => sillasPersonas.data.sillasVacias, () => sillasPersonas.data.totalNinos], () => {
+    form.sillas.totalSillas = sillasPersonas.data.totalSillas;
+    form.sillas.sillasVacias = sillasPersonas.data.sillasVacias;
+    form.sillas.totalNinos = sillasPersonas.data.totalNinos;
+    // NO sincronizamos totalPersonas aquí porque se calcula automáticamente
+});
+
+// Sincronizar servidores con form.servidores
+watch([() => servidores.value.servidores, () => servidores.value.comunicaciones, () => servidores.value.logistica, () => servidores.value.alabanza], () => {
+    form.servidores = { ...servidores.value };
+});
+
+// Sincronizar servidorasPastora con form.servidorasPastora
+watch(servidorasPastora, (newValue) => {
+    form.servidorasPastora = [...newValue];
+}, { deep: true });
+
+const guardar = () => {
+    console.log('💾 [A1] Guardando form.sillas:', JSON.stringify(form.sillas));
+    console.log('💾 [A1] totalPersonas a guardar:', form.sillas.totalPersonas);
     form.post(route('conteo-a1.store'), {
         preserveScroll: true,
         onSuccess: () => {
@@ -211,10 +236,30 @@ const removeServidoraPastora = (index) => {
                             <ServidoresGridCard
                                 title="Servidores"
                                 :fields="[
-                                    { label: 'Servidores', value: servidores.servidores, onChange: (v) => updateServidor('servidores', v) },
-                                    { label: 'Comunicaciones', value: servidores.comunicaciones, onChange: (v) => updateServidor('comunicaciones', v) },
-                                    { label: 'Logística', value: servidores.logistica, onChange: (v) => updateServidor('logistica', v) },
-                                    { label: 'Alabanza', value: servidores.alabanza, onChange: (v) => updateServidor('alabanza', v) },
+                                    { 
+                                        label: 'Servidores', 
+                                        value: servidores.servidores, 
+                                        max: limiteServidores,
+                                        error: servidores.servidores > limiteServidores ? `Máximo ${limiteServidores} (sillas ocupadas)` : '',
+                                        onChange: (v) => updateServidor('servidores', v) 
+                                    },
+                                    { 
+                                        label: 'Comunicaciones', 
+                                        value: servidores.comunicaciones, 
+                                        onChange: (v) => updateServidor('comunicaciones', v) 
+                                    },
+                                    { 
+                                        label: 'Logística', 
+                                        value: servidores.logistica, 
+                                        max: limiteServidores,
+                                        error: servidores.logistica > limiteServidores ? `Máximo ${limiteServidores} (sillas ocupadas)` : '',
+                                        onChange: (v) => updateServidor('logistica', v) 
+                                    },
+                                    { 
+                                        label: 'Alabanza', 
+                                        value: servidores.alabanza, 
+                                        onChange: (v) => updateServidor('alabanza', v) 
+                                    },
                                 ]"
                             />
 

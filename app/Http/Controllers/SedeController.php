@@ -72,7 +72,7 @@ class SedeController extends Controller
 
     /**
      * Switch the current sede for the super user.
-     * Stores the selected sede in session.
+     * Stores the selected sede in session and as user preference.
      */
     public function switch(Request $request, string $slug)
     {
@@ -80,6 +80,11 @@ class SedeController extends Controller
         
         // Guardar la sede seleccionada en la sesión
         session(['sede_actual_id' => $sede->id]);
+        
+        // Guardar como sede preferida del usuario para persistir entre sesiones
+        if ($request->user()) {
+            $request->user()->update(['sede_preferida_id' => $sede->id]);
+        }
         
         // Limpiar el servicio seleccionado al cambiar de sede
         session()->forget('servicio_actual_id');

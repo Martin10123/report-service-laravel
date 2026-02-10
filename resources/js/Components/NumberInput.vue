@@ -23,6 +23,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    error: {
+        type: String,
+        default: '',
+    },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -98,7 +102,10 @@ const handleInput = (e) => {
         <div class="flex items-center gap-1">
             <button
                 type="button"
-                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gray-300 bg-transparent text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                :class="[
+                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-transparent hover:bg-gray-50 disabled:opacity-50',
+                    error ? 'border-red-300 text-red-600' : 'border-gray-300 text-gray-600'
+                ]"
                 :disabled="readonly || modelValue <= min"
                 @click="handleDecrement"
             >
@@ -114,13 +121,18 @@ const handleInput = (e) => {
                 :readonly="readonly"
                 :class="[
                     'h-7 flex-1 rounded border text-center text-sm font-semibold [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
-                    readonly ? 'border-gray-200 bg-gray-100 cursor-not-allowed text-gray-700' : 'border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500'
+                    error ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-2 focus:ring-red-500' : 
+                    readonly ? 'border-gray-200 bg-gray-100 cursor-not-allowed text-gray-700' : 
+                    'border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500'
                 ]"
                 @input="handleInput"
             />
             <button
                 type="button"
-                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gray-300 bg-transparent text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                :class="[
+                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-transparent hover:bg-gray-50 disabled:opacity-50',
+                    error ? 'border-red-300 text-red-600' : 'border-gray-300 text-gray-600'
+                ]"
                 :disabled="readonly || modelValue >= max"
                 @click="handleIncrement"
             >
@@ -129,5 +141,6 @@ const handleInput = (e) => {
                 </svg>
             </button>
         </div>
+        <p v-if="error" class="text-xs text-red-600 mt-0.5">{{ error }}</p>
     </div>
 </template>
