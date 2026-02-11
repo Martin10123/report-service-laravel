@@ -19,12 +19,24 @@ echo "📊 Estado del entorno:"
 echo "APP_ENV: $APP_ENV"
 echo "APP_DEBUG: $APP_DEBUG"
 echo "DB_CONNECTION: $DB_CONNECTION"
-echo "DB_HOST: $DB_HOST"
-echo "DATABASE_URL: $([ -n "$DATABASE_URL" ] && echo 'Sí' || echo 'No')"
+if [ -n "$DATABASE_URL" ]; then
+    echo "DATABASE_URL: ✓ Configurado"
+else
+    echo "DATABASE_URL: ✗ No configurado"
+    echo "DB_HOST: $DB_HOST"
+fi
+
+# Verificar conexión a base de datos
+echo "🔍 Verificando conexión a base de datos..."
+php artisan db:show 2>&1 || echo "⚠️ No se pudo verificar la conexión"
 
 # Migraciones
 echo "🗄️ Ejecutando migraciones..."
 php artisan migrate --force || echo "⚠️ Migraciones fallaron"
+
+# Seeders
+echo "🌱 Ejecutando seeders..."
+php artisan db:seed --force || echo "⚠️ Seeders fallaron o ya ejecutados"
 
 # Optimización (solo si todo funciona)
 if [ "$APP_ENV" = "production" ]; then
