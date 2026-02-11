@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Service;
 use Inertia\Inertia;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +22,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Forzar HTTPS en producción
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         Inertia::share([
             'servicioActual' => function () {
                 $id = session('servicio_actual_id');
