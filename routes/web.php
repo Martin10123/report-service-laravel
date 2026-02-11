@@ -108,16 +108,10 @@ Route::middleware([
     // Informe Final
     Route::get('/informe-final', [\App\Http\Controllers\InformeFinalController::class, 'index'])
         ->name('informe-final');
-
-    Route::get('/informe-final/pdf', function () {
-        // Placeholder: generar PDF
-        return response()->json(['message' => 'Generando PDF...']);
-    })->name('informe-final.pdf');
-
-    Route::get('/informe-final/excel', function () {
-        // Placeholder: generar Excel
-        return response()->json(['message' => 'Generando Excel...']);
-    })->name('informe-final.excel');
+    Route::get('/informe-final/pdf', [\App\Http\Controllers\InformeFinalController::class, 'exportPDF'])
+        ->name('informe-final.pdf');
+    Route::get('/informe-final/excel', [\App\Http\Controllers\InformeFinalController::class, 'exportExcel'])
+        ->name('informe-final.excel');
 
     // Consolidado
     Route::get('/consolidado', [\App\Http\Controllers\ConsolidadoController::class, 'index'])

@@ -26,7 +26,7 @@ const cambiarTema = (tema) => {
         <div class="space-y-4">
             <!-- Header -->
             <div class="flex flex-col gap-2">
-                <h1 class="text-xl font-bold text-gray-900 sm:text-2xl">
+                <h1 class="!text-xl font-bold text-gray-900 sm:!text-2xl !m-0">
                     Configuraciones
                 </h1>
                 <p class="text-sm text-gray-600">

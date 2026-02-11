@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\InformeFinalExcelHelper;
 use App\Http\Traits\RequiresService;
 use App\Models\Service;
 use Illuminate\Http\Request;
@@ -303,5 +304,113 @@ class InformeFinalController extends Controller
                 'final' => (($iglekids['inicial'] ?? 0) + ($iglekids['recibidos'] ?? 0)) - ($iglekids['entregados'] ?? 0),
             ],
         ];
+    }
+
+    /**
+     * Generate Excel report for the informe final.
+     */
+    public function exportExcel(Request $request)
+    {
+        try {
+            $servicio = $this->requireService($request);
+            
+            if ($servicio instanceof RedirectResponse) {
+                return $servicio;
+            }
+
+            // Cargar relaciones
+            $servicio->load([
+                'sede',
+                'primerConteo',
+                'conteoA1',
+                'conteoA2',
+                'conteoA3',
+                'conteoA4',
+                'conteoSobres'
+            ]);
+
+            // Consolidar datos
+            $datosConsolidados = $this->consolidarDatos($servicio);
+
+            // Generar el Excel usando el helper
+            $excel = InformeFinalExcelHelper::generate($servicio, $datosConsolidados);
+
+            // Nombre del archivo con timestamp
+            $fecha = $servicio->fecha->format('d-m-Y');
+            $sede = str_replace(' ', '_', $servicio->sede->nombre ?? 'reporte');
+            $timestamp = now()->format('His'); // Hora, Minuto, Segundo
+            $filename = "informe_final_{$sede}_{$fecha}_{$timestamp}.xlsx";
+
+            // Descargar el archivo con headers anti-caché
+            return response()->streamDownload(function() use ($excel) {
+                $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($excel);
+                $writer->save('php://output');
+            }, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error al generar Excel informe final: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al generar Excel'], 500);
+        }
+    }
+
+    /**
+     * Generate PDF report for the informe final.
+     */
+    public function exportPDF(Request $request)
+    {
+        try {
+            $servicio = $this->requireService($request);
+            
+            if ($servicio instanceof RedirectResponse) {
+                return $servicio;
+            }
+
+            // Cargar relaciones
+            $servicio->load([
+                'sede',
+                'primerConteo',
+                'conteoA1',
+                'conteoA2',
+                'conteoA3',
+                'conteoA4',
+                'conteoSobres'
+            ]);
+
+            // Consolidar datos
+            $datosConsolidados = $this->consolidarDatos($servicio);
+
+            // Datos para la vista
+            $datos = [
+                'servicio' => $servicio,
+                'fecha' => \Carbon\Carbon::parse($servicio->fecha)->locale('es')->isoFormat('DD/MMM/YYYY'),
+                'primerConteo' => $servicio->primerConteo,
+                'conteoA1' => $servicio->conteoA1,
+                'conteoA2' => $servicio->conteoA2,
+                'conteoA3' => $servicio->conteoA3,
+                'conteoA4' => $servicio->conteoA4,
+                'conteoSobres' => $servicio->conteoSobres,
+                'datosConsolidados' => $datosConsolidados,
+            ];
+
+            // Generar PDF
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.informe-final', $datos);
+            $pdf->setPaper('letter', 'portrait');
+            
+            // Nombre del archivo
+            $fecha = $servicio->fecha->format('d-m-Y');
+            $sede = str_replace(' ', '_', $servicio->sede->nombre ?? 'reporte');
+            $filename = "informe_final_{$sede}_{$fecha}.pdf";
+
+            return $pdf->download($filename);
+
+        } catch (Exception $e) {
+            Log::error('Error al generar PDF informe final: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al generar PDF'], 500);
+        }
     }
 }

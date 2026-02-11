@@ -93,11 +93,11 @@ const fechaFormateada = computed(() => {
 });
 
 const exportarPDF = () => {
-    window.open(route('informe-final.pdf'), '_blank');
+    window.open(route('informe-final.pdf', { servicio_id: props.servicio_id }), '_blank');
 };
 
 const exportarExcel = () => {
-    window.location.href = route('informe-final.excel');
+    window.location.href = route('informe-final.excel', { servicio_id: props.servicio_id });
 };
 </script>
 
