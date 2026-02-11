@@ -82,7 +82,9 @@ const props = defineProps({
 
 const fechaFormateada = computed(() => {
     if (!props.servicio?.fecha) return '';
-    const fecha = new Date(props.servicio.fecha);
+    // Parsear la fecha como fecha local, no UTC, para evitar problemas de zona horaria
+    const [year, month, day] = props.servicio.fecha.split('-');
+    const fecha = new Date(year, month - 1, day);
     return fecha.toLocaleDateString('es-ES', {
         day: '2-digit',
         month: '2-digit',

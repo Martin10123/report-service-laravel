@@ -33,7 +33,9 @@ const props = defineProps({
 
 const fechaFormateada = computed(() => {
     if (!props.data?.fecha) return '';
-    const fecha = new Date(props.data.fecha);
+    // Parsear la fecha como fecha local, no UTC, para evitar problemas de zona horaria
+    const [year, month, day] = props.data.fecha.split('-');
+    const fecha = new Date(year, month - 1, day);
     return fecha.toLocaleDateString('es-ES', {
         day: 'numeric',
         month: 'short',
@@ -110,10 +112,9 @@ const exportarExcel = () => {
 
             <!-- AUDITORIO -->
             <Card>
-                <CardHeader>
-                    <CardTitle class="text-white">AUDITORIO</CardTitle>
-                </CardHeader>
-                <CardContent class="overflow-x-auto p-0">
+                <CardContent class="p-0">
+                    <h2 class="text-xl font-bold text-gray-900 text-center py-4 border-b-2 border-gray-200">AUDITORIO</h2>
+                    <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b-2 border-gray-300 bg-gray-50">
@@ -174,15 +175,15 @@ const exportarExcel = () => {
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </CardContent>
             </Card>
 
             <!-- SERVIDORES -->
             <Card>
-                <CardHeader>
-                    <CardTitle class="text-white">SERVIDORES</CardTitle>
-                </CardHeader>
-                <CardContent class="overflow-x-auto p-0">
+                <CardContent class="p-0">
+                    <h2 class="text-xl font-bold text-gray-900 text-center py-4 border-b-2 border-gray-200">SERVIDORES</h2>
+                    <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b-2 border-gray-300 bg-gray-50">
@@ -306,15 +307,15 @@ const exportarExcel = () => {
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </CardContent>
             </Card>
 
             <!-- PARQUEADERO (solo si tiene datos) -->
             <Card v-if="data.parqueadero && Object.keys(data.parqueadero).length > 0">
-                <CardHeader>
-                    <CardTitle class="text-white">PARQUEADERO</CardTitle>
-                </CardHeader>
-                <CardContent class="overflow-x-auto p-0">
+                <CardContent class="p-0">
+                    <h2 class="text-xl font-bold text-gray-900 text-center py-4 border-b-2 border-gray-200">PARQUEADERO</h2>
+                    <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b-2 border-gray-300 bg-gray-50">
@@ -366,6 +367,7 @@ const exportarExcel = () => {
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

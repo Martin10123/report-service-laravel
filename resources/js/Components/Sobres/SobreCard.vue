@@ -36,7 +36,7 @@ const update = (key, value) => {
                     @update:model-value="update('inicial', $event)"
                 />
                 <NumberInput
-                    label="Recibidos"
+                    label="Ingresados"
                     :model-value="data.recibidos"
                     @update:model-value="update('recibidos', $event)"
                 />

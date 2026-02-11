@@ -118,8 +118,8 @@ class ConsolidadoController extends Controller
             $totalPersonas = $sillasData['totalPersonas'] ?? 0;
             $totalNinos = $sillasData['totalNinos'] ?? 0;
             
-            // Total área = total_personas (que es la suma de adultos + niños en el área)
-            $totalArea = $totalPersonas;
+            // Total área = suma de todas las filas (sillas + sillas_vacias + total_personas + total_ninos)
+            $totalArea = $sillas + $sillasVacias + $totalPersonas + $totalNinos;
 
             $auditorio[$area] = [
                 'sillas' => $sillas,
@@ -193,13 +193,13 @@ class ConsolidadoController extends Controller
             // A1: servidores, comunicaciones, logistica, alabanza + VIP (servidoras pastora)
             // A2: servidores, logistica, jesusPlace, datafono, ministerial
             // A3: servidores, consolidacion, logistica
-            // A4: exteriores (servidores, logistica, coffee, container) + iglekids
+            // A4: exteriores (servidores, logistica, coffee) + iglekids (NO incluir container en jesusPlace)
             $servidoresArea = [
                 'servidores' => $ext['servidores'] ?? $servidoresData['servidores'] ?? null,
                 'consolidacion' => $servidoresData['consolidacion'] ?? null,
                 'comunicaciones' => $servidoresData['comunicaciones'] ?? null,
                 'logistica' => $ext['logistica'] ?? $servidoresData['logistica'] ?? null,
-                'jesusPlace' => $ext['container'] ?? $servidoresData['jesusPlace'] ?? null,
+                'jesusPlace' => $servidoresData['jesusPlace'] ?? null, // Solo jesusPlace real, NO container
                 'datafono' => $servidoresData['datafono'] ?? null,
                 'coffee' => $ext['coffee'] ?? null,
                 'ministerial' => $servidoresData['ministerial'] ?? null,

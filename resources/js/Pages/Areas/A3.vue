@@ -103,8 +103,6 @@ watch([() => servidores.value.servidores, () => servidores.value.consolidacion, 
 });
 
 const guardar = () => {
-    console.log('💾 [A3] Guardando form.sillas:', JSON.stringify(form.sillas));
-    console.log('💾 [A3] totalPersonas a guardar:', form.sillas.totalPersonas);
     form.post(route('conteo-a3.store'), {
         preserveScroll: true,
         onSuccess: () => {

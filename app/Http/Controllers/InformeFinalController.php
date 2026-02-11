@@ -25,6 +25,7 @@ class InformeFinalController extends Controller
             
             // Si es una redirección, retornarla
             if ($servicio instanceof RedirectResponse) {
+                Log::warning('InformeFinalController::index - Redirigiendo por falta de servicio');
                 return $servicio;
             }
 
@@ -80,33 +81,54 @@ class InformeFinalController extends Controller
         $conteoA4 = $servicio->conteoA4;
         $conteoSobres = $servicio->conteoSobres;
 
-        // 1. Asistencia en Auditorio (del Primer Conteo)
-        $primerConteoAreas = $primerConteo?->areas ?? [];
-        $enSillas = $primerConteoAreas['sillas'] ?? 0;
-        $enGradas = $primerConteoAreas['gradas'] ?? 0;
-        $ninosAuditorio = $primerConteoAreas['ninos_auditorio'] ?? 0;
-        $ninosIglekids = 0;
-
-        // Obtener niños de Iglekids de las diferentes áreas
+        // 1. Asistencia en Auditorio (de los conteos de áreas)
+        // En Sillas = Total Personas de A1 + A2
+        $enSillas = 0;
         if ($conteoA1) {
             $areasA1 = $conteoA1->areas ?? [];
-            $iglekidsA1 = $areasA1['iglekids'] ?? [];
-            $ninosIglekids += $iglekidsA1['ninos'] ?? 0;
+            $sillasA1 = $areasA1['sillas'] ?? [];
+            $enSillas += $sillasA1['totalPersonas'] ?? 0;
         }
         if ($conteoA2) {
             $areasA2 = $conteoA2->areas ?? [];
-            $iglekidsA2 = $areasA2['iglekids'] ?? [];
-            $ninosIglekids += $iglekidsA2['ninos'] ?? 0;
+            $sillasA2 = $areasA2['sillas'] ?? [];
+            $enSillas += $sillasA2['totalPersonas'] ?? 0;
+        }
+
+        // En Gradas = Total Personas de A3
+        $enGradas = 0;
+        if ($conteoA3) {
+            $areasA3 = $conteoA3->areas ?? [];
+            $sillasA3 = $areasA3['sillas'] ?? [];
+            $enGradas = $sillasA3['totalPersonas'] ?? 0;
+        }
+
+        // Niños Auditorio = Total niños de A1 + A2 + A3
+        $ninosAuditorio = 0;
+        if ($conteoA1) {
+            $areasA1 = $conteoA1->areas ?? [];
+            $sillasA1 = $areasA1['sillas'] ?? [];
+            $ninosAuditorio += $sillasA1['totalNinos'] ?? 0;
+        }
+        if ($conteoA2) {
+            $areasA2 = $conteoA2->areas ?? [];
+            $sillasA2 = $areasA2['sillas'] ?? [];
+            $ninosAuditorio += $sillasA2['totalNinos'] ?? 0;
         }
         if ($conteoA3) {
             $areasA3 = $conteoA3->areas ?? [];
-            $iglekidsA3 = $areasA3['iglekids'] ?? [];
-            $ninosIglekids += $iglekidsA3['ninos'] ?? 0;
+            $sillasA3 = $areasA3['sillas'] ?? [];
+            $ninosAuditorio += $sillasA3['totalNinos'] ?? 0;
         }
-        if ($conteoA4) {
-            $areasA4 = $conteoA4->areas ?? [];
-            $iglekidsA4 = $areasA4['iglekids'] ?? [];
-            $ninosIglekids += $iglekidsA4['ninos'] ?? 0;
+
+        // Niños Iglekids = Total niños del campo 'ninos' de iglekids de todas las áreas
+        $ninosIglekids = 0;
+        foreach ([$conteoA1, $conteoA2, $conteoA3, $conteoA4] as $conteo) {
+            if ($conteo) {
+                $areas = $conteo->areas ?? [];
+                $iglekids = $areas['iglekids'] ?? [];
+                $ninosIglekids += $iglekids['ninos'] ?? 0;
+            }
         }
 
         $totalAuditorio = $enSillas + $enGradas + $ninosAuditorio + $ninosIglekids;
@@ -167,19 +189,35 @@ class InformeFinalController extends Controller
             $servidores['comunicaciones'] += $areas['comunicaciones'] ?? 0;
             $servidores['ministerial'] += $areas['ministerial'] ?? 0;
             $servidores['alabanza'] += $areas['alabanza'] ?? 0;
-            $servidores['vip'] += $areas['vip'] ?? 0;
             $servidores['datafono'] += $areas['datafono'] ?? 0;
         }
 
-        // Áreas A1, A2, A3, A4 - Exteriores
+        // Áreas A1, A2, A3, A4
         foreach ([$conteoA1, $conteoA2, $conteoA3, $conteoA4] as $conteo) {
             if ($conteo) {
                 $areas = $conteo->areas ?? [];
+                
+                // Servidores internos (A1, A2, A3)
+                $servidoresData = $areas['servidores'] ?? [];
+                $servidores['servidores'] += $servidoresData['servidores'] ?? 0;
+                $servidores['consolidacion'] += $servidoresData['consolidacion'] ?? 0;
+                $servidores['comunicaciones'] += $servidoresData['comunicaciones'] ?? 0;
+                $servidores['logistica'] += $servidoresData['logistica'] ?? 0;
+                $servidores['jesusPlace'] += $servidoresData['jesusPlace'] ?? 0;
+                $servidores['datafono'] += $servidoresData['datafono'] ?? 0;
+                $servidores['ministerial'] += $servidoresData['ministerial'] ?? 0;
+                $servidores['alabanza'] += $servidoresData['alabanza'] ?? 0;
+                
+                // VIP = contar servidoras pastora (array)
+                $servidorasPastora = $areas['servidorasPastora'] ?? [];
+                $servidores['vip'] += is_array($servidorasPastora) ? count($servidorasPastora) : 0;
+                
+                // Exteriores (A4)
                 $ext = $areas['exteriores'] ?? [];
                 $servidores['servidores'] += $ext['servidores'] ?? 0;
                 $servidores['logistica'] += $ext['logistica'] ?? 0;
                 $servidores['coffee'] += $ext['coffee'] ?? 0;
-                $servidores['jesusPlace'] += $ext['container'] ?? 0; // Container se mapea a Jesus Place
+                // Container NO se suma a jesusPlace
 
                 // Iglekids personal
                 $igk = $areas['iglekids'] ?? [];
