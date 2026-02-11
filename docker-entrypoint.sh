@@ -3,42 +3,37 @@ set -e
 
 echo "🚀 Iniciando aplicación Laravel..."
 
-# Asegurar permisos correctos
+# Permisos seguros
 echo "📁 Configurando permisos..."
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
+chmod -R 777 storage bootstrap/cache
 
-# Limpiar caches antiguos
+# Limpiar caches
 echo "🧹 Limpiando caches..."
 php artisan config:clear || true
 php artisan route:clear || true
 php artisan view:clear || true
 php artisan cache:clear || true
 
-# Generar APP_KEY si no existe
-if [ -z "$APP_KEY" ]; then
-    echo "🔑 Generando APP_KEY..."
-    php artisan key:generate --force
-fi
+# Mostrar config útil
+echo "📊 Estado del entorno:"
+echo "APP_ENV: $APP_ENV"
+echo "APP_DEBUG: $APP_DEBUG"
+echo "DB_CONNECTION: $DB_CONNECTION"
+echo "DB_HOST: $DB_HOST"
+echo "DATABASE_URL: $([ -n "$DATABASE_URL" ] && echo 'Sí' || echo 'No')"
 
-# Crear directorio de base de datos si no existe (para SQLite)
-echo "💾 Preparando base de datos..."
-mkdir -p database
-touch database/database.sqlite || true
-chmod 664 database/database.sqlite || true
-
-# Ejecutar migraciones
+# Migraciones
 echo "🗄️ Ejecutando migraciones..."
-php artisan migrate --force || echo "⚠️ Migraciones fallaron o ya están actualizadas"
+php artisan migrate --force || echo "⚠️ Migraciones fallaron"
 
-# Cachear configuración en producción
+# Optimización (solo si todo funciona)
 if [ "$APP_ENV" = "production" ]; then
-    echo "⚡ Optimizando para producción..."
+    echo "⚡ Optimizando..."
     php artisan config:cache
     php artisan route:cache
     php artisan view:cache
 fi
 
 # Iniciar servidor
-echo "✅ Iniciando servidor en puerto $PORT..."
-exec php -S 0.0.0.0:$PORT -t public
+echo "✅ Servidor en puerto ${PORT:-10000}"
+exec php -S 0.0.0.0:${PORT:-10000} -t public
