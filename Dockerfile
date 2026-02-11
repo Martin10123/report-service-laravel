@@ -9,7 +9,11 @@ RUN apt-get update && apt-get install -y \
     zip \
     nodejs \
     npm \
-    && docker-php-ext-install zip
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install zip gd
 
 # Instalar Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
