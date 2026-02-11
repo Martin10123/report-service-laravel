@@ -19,16 +19,7 @@ trait RequiresService
     {
         $servicioId = $request->input($paramName);
 
-        \Illuminate\Support\Facades\Log::info('RequiresService::requireService - Verificando servicio', [
-            'param_name' => $paramName,
-            'servicio_id' => $servicioId,
-            'all_input' => $request->all(),
-            'query_params' => $request->query(),
-            'route_params' => $request->route() ? $request->route()->parameters() : [],
-        ]);
-
         if (!$servicioId) {
-            \Illuminate\Support\Facades\Log::warning('RequiresService::requireService - No se encontró servicio_id');
             return redirect()
                 ->route('servicios.index')
                 ->with('warning', 'Por favor seleccione un servicio primero.');
@@ -36,10 +27,6 @@ trait RequiresService
 
         try {
             $servicio = Service::with('sede')->findOrFail($servicioId);
-            \Illuminate\Support\Facades\Log::info('RequiresService::requireService - Servicio encontrado', [
-                'servicio_id' => $servicio->id,
-                'servicio_numero' => $servicio->numero_servicio,
-            ]);
             return $servicio;
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             \Illuminate\Support\Facades\Log::error('RequiresService::requireService - Servicio no encontrado en BD', [

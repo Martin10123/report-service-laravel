@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\InformeFinalExcelHelper;
 use App\Http\Traits\RequiresService;
 use App\Models\Service;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -384,10 +385,13 @@ class InformeFinalController extends Controller
             // Consolidar datos
             $datosConsolidados = $this->consolidarDatos($servicio);
 
-            // Datos para la vista
+            // Datos para la vista - asegurar que son valores simples
             $datos = [
                 'servicio' => $servicio,
                 'fecha' => \Carbon\Carbon::parse($servicio->fecha)->locale('es')->isoFormat('DD/MMM/YYYY'),
+                'sedeNombre' => $servicio->sede ? $servicio->sede->nombre : 'N/A',
+                'diaSemana' => $servicio->dia_semana ?? '',
+                'hora' => $servicio->hora ?? '',
                 'primerConteo' => $servicio->primerConteo,
                 'conteoA1' => $servicio->conteoA1,
                 'conteoA2' => $servicio->conteoA2,
@@ -398,18 +402,23 @@ class InformeFinalController extends Controller
             ];
 
             // Generar PDF
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.informe-final', $datos);
+            $pdf = Pdf::loadView('pdf.informe-final', $datos);
             $pdf->setPaper('letter', 'portrait');
             
             // Nombre del archivo
             $fecha = $servicio->fecha->format('d-m-Y');
-            $sede = str_replace(' ', '_', $servicio->sede->nombre ?? 'reporte');
+            $sedeNombre = $servicio->sede ? $servicio->sede->nombre : 'reporte';
+            $sede = str_replace(' ', '_', $sedeNombre);
             $filename = "informe_final_{$sede}_{$fecha}.pdf";
 
             return $pdf->download($filename);
 
         } catch (Exception $e) {
-            Log::error('Error al generar PDF informe final: ' . $e->getMessage());
+            Log::error('Error al generar PDF informe final: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
             return response()->json(['error' => 'Error al generar PDF'], 500);
         }
     }
